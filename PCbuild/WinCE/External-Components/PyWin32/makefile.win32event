@@ -1,0 +1,17 @@
+#
+#	Build the win32gui.pyd DLL
+#
+!INCLUDE common.mk
+
+MODULE=win32event
+BASE=0x1e800000
+SOURCE_DIRECTORY=$(PYWIN32ROOT)\win32\src
+SOURCE_FILE=win32eventmodule_wince.cpp
+LIBRARIES = binaries\$(PLATFORM_OUTDIR)\pywintypes\pywintypes$(PLATFORM_DLL_SUFFIX).lib
+ADDITIONAL_LFLAGS=/export:initwin32event /nodefaultlib:pywintypes.lib /nodefaultlib:pywintypes_d.lib
+
+!INCLUDE makefile.pyd
+
+$(SOURCE_DIRECTORY)\win32eventmodule_wince.cpp: $(SOURCE_DIRECTORY)\win32event.i
+	$(SWIG) -c++ -o $(SOURCE_DIRECTORY)\win32eventmodule_wince.cpp $(SOURCE_DIRECTORY)\win32event.i
+

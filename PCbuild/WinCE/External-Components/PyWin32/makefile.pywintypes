@@ -1,0 +1,123 @@
+#
+#	Build the pywintypes DLL
+#
+
+#
+#	What we are building is pywintypes
+#
+BUILD=pywintypes
+
+#
+#	The result for pywintypes
+#
+RESULT=pywintypes
+
+#
+#	Include the common stuff
+#
+!INCLUDE common.mk
+
+#
+#	Add definitions for PyWinTypes
+#
+CFLAGS = $(CFLAGS) /D BUILD_PYWINTYPES
+
+#
+#	The target
+#
+ALL : $(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll
+
+#
+#	The output directory
+#
+$(OUTDIR):
+    if not exist $(OUTDIR) mkdir $(OUTDIR)
+
+#
+#	The object files
+#
+LINK32_OBJS= \
+	$(INTDIR)\PyACL.obj \
+	$(INTDIR)\PyHANDLE.obj \
+	$(INTDIR)\PyIID.obj \
+	$(INTDIR)\PyLARGE_INTEGER.obj \
+	$(INTDIR)\PyOVERLAPPED.obj \
+	$(INTDIR)\PySECURITY_ATTRIBUTES.obj \
+	$(INTDIR)\PySECURITY_DESCRIPTOR.obj \
+	$(INTDIR)\PySID.obj \
+	$(INTDIR)\PyTime.obj \
+	$(INTDIR)\PyUnicode.obj \
+	$(INTDIR)\PyWinTypesmodule.obj \
+	$(INTDIR)\PyWinTypes_WinCE_Compatibility.obj \
+
+#
+#	The link step
+#
+LFLAGS=/nologo /base:0x1e600000 /stack:0x10000,0x1000 /dll /entry:"_DllMainCRTStartup" \
+	$(LINK32_FLAGS) oleaut32.lib $(PYTHONCORE_LIB) /nodefaultlib:python$(PYTHON_VERSION).lib \
+	/implib:$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).lib
+$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll: $(OUTDIR) $(LINK32_OBJS)
+    $(LINK32) @<<
+  $(LFLAGS) /out:$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll /pdb:$(OUTDIR)\$(RESULT).pdb $(LINK32_OBJS)
+<<
+
+#
+#	Source->Object dependencies
+#
+SOURCE=$(PYWIN32ROOT)\win32\src\PyACL.cpp
+$(INTDIR)\PyACL.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=$(PYWIN32ROOT)\win32\src\PyHANDLE.cpp
+$(INTDIR)\PyHANDLE.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=$(PYWIN32ROOT)\win32\src\PyIID.cpp
+$(INTDIR)\PyIID.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+SOURCE=$(PYWIN32ROOT)\win32\src\PyLARGE_INTEGER.cpp
+$(INTDIR)\PyLARGE_INTEGER.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+SOURCE=$(PYWIN32ROOT)\win32\src\PyOVERLAPPED.cpp
+$(INTDIR)\PyOVERLAPPED.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=$(PYWIN32ROOT)\win32\src\PySECURITY_ATTRIBUTES.cpp
+$(INTDIR)\PySECURITY_ATTRIBUTES.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=$(PYWIN32ROOT)\win32\src\PySECURITY_DESCRIPTOR.cpp
+$(INTDIR)\PySECURITY_DESCRIPTOR.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=$(PYWIN32ROOT)\win32\src\PySID.cpp
+$(INTDIR)\PySID.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=$(PYWIN32ROOT)\win32\src\PyTime.cpp
+$(INTDIR)\PyTime.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=$(PYWIN32ROOT)\win32\src\PyUnicode.cpp
+$(INTDIR)\PyUnicode.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=$(PYWIN32ROOT)\win32\src\PyWinTypesmodule.cpp
+$(INTDIR)\PyWinTypesmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\WinCE\PyWin32\PyWinTypes_WinCE_Compatibility.c
+$(INTDIR)\PyWinTypes_WinCE_Compatibility.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+	
+#
+#	Cleanup
+#
+CLEAN:
+	@if exist $(INTDIR) rmdir/s/q $(INTDIR)
+

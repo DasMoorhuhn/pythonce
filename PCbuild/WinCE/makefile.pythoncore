@@ -1,0 +1,708 @@
+#
+#	Build the python core DLL
+#
+
+#
+#	What we are building is pythoncore
+#
+BUILD=pythoncore
+
+#
+#	The result for python core
+#
+RESULT=python$(PYTHON_VERSION)
+
+#
+#	Include the common stuff
+#
+!INCLUDE common.mk
+
+#
+#	Add flags for the DLL
+#
+CPP_PROJ=$(CPP_PROJ) $(CFLAGS_DLL)
+
+#
+#	Common defintions for the python core build
+#
+LFLAGS=/nologo /stack:0x10000,0x1000 /dll $(LINK32_DLL_FLAGS)
+RSCFLAGS=/l 0x409 /fo$(INTDIR)\python_nt.res \
+	 /i ..\..\Include /i ..\..\PC\WinCE \
+	 /d UNDER_CE=$(CEVersion) /d _WIN32_WCE=$(CEVersion) /d UNICODE /d _UNICODE /d "$(CePlatform)"  \
+	 $(PLATFORM_RSCFLAGS)
+
+#
+#	The target
+#
+ALL : $(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll
+
+#
+#	The output directory
+#
+$(OUTDIR):
+    if not exist $(OUTDIR) mkdir $(OUTDIR)
+
+#
+#	The object files
+#
+LIBRARY_OBJS= \
+	$(INTDIR)\_codecsmodule.obj \
+	$(INTDIR)\_hotshot.obj \
+	$(INTDIR)\_sre.obj \
+	$(INTDIR)\_weakref.obj \
+	$(INTDIR)\arraymodule.obj \
+	$(INTDIR)\audioop.obj \
+	$(INTDIR)\binascii.obj \
+	$(INTDIR)\cmathmodule.obj \
+	$(INTDIR)\cPickle.obj \
+	$(INTDIR)\cStringIO.obj \
+	$(INTDIR)\errnomodule.obj \
+	$(INTDIR)\gcmodule.obj \
+	$(INTDIR)\getbuildinfo.obj \
+	$(INTDIR)\imageop.obj \
+	$(INTDIR)\mathmodule.obj \
+	$(INTDIR)\md5c.obj \
+	$(INTDIR)\md5module.obj \
+	$(INTDIR)\operator.obj \
+	$(INTDIR)\pcremodule.obj \
+	$(INTDIR)\pypcre.obj \
+	$(INTDIR)\regexmodule.obj \
+	$(INTDIR)\regexpr.obj \
+	$(INTDIR)\rgbimgmodule.obj \
+	$(INTDIR)\rotormodule.obj \
+	$(INTDIR)\shamodule.obj \
+	$(INTDIR)\stropmodule.obj \
+	$(INTDIR)\structmodule.obj \
+	$(INTDIR)\threadmodule.obj \
+	$(INTDIR)\xreadlinesmodule.obj \
+	$(INTDIR)\xxsubtype.obj \
+	$(INTDIR)\yuvconvert.obj \
+	$(INTDIR)\abstract.obj \
+	$(INTDIR)\boolobject.obj \
+	$(INTDIR)\bufferobject.obj \
+	$(INTDIR)\cellobject.obj \
+	$(INTDIR)\classobject.obj \
+	$(INTDIR)\cobject.obj \
+	$(INTDIR)\complexobject.obj \
+	$(INTDIR)\descrobject.obj \
+	$(INTDIR)\dictobject.obj \
+	$(INTDIR)\enumobject.obj \
+	$(INTDIR)\fileobject.obj \
+	$(INTDIR)\floatobject.obj \
+	$(INTDIR)\frameobject.obj \
+	$(INTDIR)\funcobject.obj \
+	$(INTDIR)\intobject.obj \
+	$(INTDIR)\iterobject.obj \
+	$(INTDIR)\listobject.obj \
+	$(INTDIR)\longobject.obj \
+	$(INTDIR)\methodobject.obj \
+	$(INTDIR)\moduleobject.obj \
+	$(INTDIR)\object.obj \
+	$(INTDIR)\obmalloc.obj \
+	$(INTDIR)\rangeobject.obj \
+	$(INTDIR)\sliceobject.obj \
+	$(INTDIR)\stringobject.obj \
+	$(INTDIR)\structseq.obj \
+	$(INTDIR)\tupleobject.obj \
+	$(INTDIR)\typeobject.obj \
+	$(INTDIR)\unicodectype.obj \
+	$(INTDIR)\unicodeobject.obj \
+	$(INTDIR)\weakrefobject.obj \
+	$(INTDIR)\acceler.obj \
+	$(INTDIR)\bitset.obj \
+	$(INTDIR)\grammar1.obj \
+	$(INTDIR)\listnode.obj \
+	$(INTDIR)\metagrammar.obj \
+	$(INTDIR)\myreadline.obj \
+	$(INTDIR)\node.obj \
+	$(INTDIR)\parser.obj \
+	$(INTDIR)\parsetok.obj \
+	$(INTDIR)\tokenizer.obj \
+	$(INTDIR)\cemodule.obj \
+	$(INTDIR)\config.obj \
+	$(INTDIR)\timemodule.obj \
+	$(INTDIR)\strftime.obj \
+	$(INTDIR)\dl_nt.obj \
+	$(INTDIR)\getpathp.obj \
+	$(INTDIR)\import_nt.obj \
+	$(INTDIR)\bltinmodule.obj \
+	$(INTDIR)\ceval.obj \
+	$(INTDIR)\codecs.obj \
+	$(INTDIR)\compile.obj \
+	$(INTDIR)\dynload_win.obj \
+	$(INTDIR)\errors.obj \
+	$(INTDIR)\exceptions.obj \
+	$(INTDIR)\frozen.obj \
+	$(INTDIR)\future.obj \
+	$(INTDIR)\getargs.obj \
+	$(INTDIR)\getcompiler.obj \
+	$(INTDIR)\getcopyright.obj \
+	$(INTDIR)\getopt.obj \
+	$(INTDIR)\getplatform.obj \
+	$(INTDIR)\getversion.obj \
+	$(INTDIR)\graminit.obj \
+	$(INTDIR)\import.obj \
+	$(INTDIR)\importdl.obj \
+	$(INTDIR)\marshal.obj \
+	$(INTDIR)\modsupport.obj \
+	$(INTDIR)\mysnprintf.obj \
+	$(INTDIR)\mystrtoul.obj \
+	$(INTDIR)\pyfpe.obj \
+	$(INTDIR)\pystate.obj \
+	$(INTDIR)\pythonrun.obj \
+	$(INTDIR)\sigcheck.obj \
+	$(INTDIR)\structmember.obj \
+	$(INTDIR)\symtable.obj \
+	$(INTDIR)\sysmodule.obj \
+	$(INTDIR)\thread.obj \
+	$(INTDIR)\traceback.obj \
+	$(INTDIR)\zipimport.obj \
+	$(INTDIR)\zlibmodule.obj \
+	$(INTDIR)\adler32.obj \
+	$(INTDIR)\compress.obj \
+	$(INTDIR)\crc32.obj \
+	$(INTDIR)\deflate.obj \
+	$(INTDIR)\inffast.obj \
+	$(INTDIR)\inflate.obj \
+	$(INTDIR)\inftrees.obj \
+	$(INTDIR)\trees.obj \
+	$(INTDIR)\zutil.obj \
+	$(INTDIR)\itertoolsmodule.obj \
+	$(INTDIR)\_localemodule.obj \
+	$(INTDIR)\_randommodule.obj \
+	$(INTDIR)\wince-compatibility.obj \
+
+#
+#	The static library
+#
+PYTHON_STATIC_LIBRARY=$(OUTDIR)\$(RESULT)_library.lib
+$(PYTHON_STATIC_LIBRARY): $(LIBRARY_OBJS)
+	lib /OUT:$(PYTHON_STATIC_LIBRARY) $(INTDIR)\*.obj
+
+#
+#	Link step
+#
+$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll : $(OUTDIR) $(DEF_FILE) $(INTDIR)\python_nt.res $(PYTHON_STATIC_LIBRARY)
+    $(LINK32) @<<
+  $(LFLAGS) /out:$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll /implib:$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).lib /pdb:$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).pdb $(INTDIR)\pythonrun.obj $(INTDIR)\python_nt.res $(PYTHON_STATIC_LIBRARY)
+<<
+
+#
+#	Source->Object dependencies
+#
+SOURCE=..\..\Modules\_codecsmodule.c
+$(INTDIR)\_codecsmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\_hotshot.c
+$(INTDIR)\_hotshot.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\_sre.c
+$(INTDIR)\_sre.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) /D USE_RECURSION_LIMIT=3000 $(SOURCE)
+
+SOURCE=..\..\Modules\_weakref.c
+$(INTDIR)\_weakref.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\arraymodule.c
+$(INTDIR)\arraymodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\audioop.c
+$(INTDIR)\audioop.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\binascii.c
+$(INTDIR)\binascii.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\cmathmodule.c
+$(INTDIR)\cmathmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\cPickle.c
+$(INTDIR)\cPickle.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\cStringIO.c
+$(INTDIR)\cStringIO.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\errnomodule.c
+$(INTDIR)\errnomodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\gcmodule.c
+$(INTDIR)\gcmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\getbuildinfo.c
+$(INTDIR)\getbuildinfo.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\imageop.c
+$(INTDIR)\imageop.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\mathmodule.c
+$(INTDIR)\mathmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\md5c.c
+$(INTDIR)\md5c.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\md5module.c
+$(INTDIR)\md5module.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\operator.c
+$(INTDIR)\operator.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\pcremodule.c
+$(INTDIR)\pcremodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\pypcre.c
+$(INTDIR)\pypcre.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\regexmodule.c
+$(INTDIR)\regexmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\regexpr.c
+$(INTDIR)\regexpr.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\rgbimgmodule.c
+$(INTDIR)\rgbimgmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\rotormodule.c
+$(INTDIR)\rotormodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\shamodule.c
+$(INTDIR)\shamodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\stropmodule.c
+$(INTDIR)\stropmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\structmodule.c
+$(INTDIR)\structmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\threadmodule.c
+$(INTDIR)\threadmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE="..\..\Modules\timemodule.c"
+$(INTDIR)\timemodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE="..\..\PC\WinCE\strftime.c"
+$(INTDIR)\strftime.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\xreadlinesmodule.c
+$(INTDIR)\xreadlinesmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\xxsubtype.c
+$(INTDIR)\xxsubtype.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\yuvconvert.c
+$(INTDIR)\yuvconvert.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\abstract.c
+$(INTDIR)\abstract.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\boolobject.c
+$(INTDIR)\boolobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\bufferobject.c
+$(INTDIR)\bufferobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\cellobject.c
+$(INTDIR)\cellobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\classobject.c
+$(INTDIR)\classobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\cobject.c
+$(INTDIR)\cobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\complexobject.c
+$(INTDIR)\complexobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\descrobject.c
+$(INTDIR)\descrobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\dictobject.c
+$(INTDIR)\dictobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\enumobject.c
+$(INTDIR)\enumobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\fileobject.c
+$(INTDIR)\fileobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\floatobject.c
+$(INTDIR)\floatobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\frameobject.c
+$(INTDIR)\frameobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\funcobject.c
+$(INTDIR)\funcobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\intobject.c
+$(INTDIR)\intobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\iterobject.c
+$(INTDIR)\iterobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\listobject.c
+$(INTDIR)\listobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\longobject.c
+$(INTDIR)\longobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\methodobject.c
+$(INTDIR)\methodobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\moduleobject.c
+$(INTDIR)\moduleobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\object.c
+$(INTDIR)\object.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\obmalloc.c
+$(INTDIR)\obmalloc.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\rangeobject.c
+$(INTDIR)\rangeobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\sliceobject.c
+$(INTDIR)\sliceobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\stringobject.c
+$(INTDIR)\stringobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\structseq.c
+$(INTDIR)\structseq.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\tupleobject.c
+$(INTDIR)\tupleobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\typeobject.c
+$(INTDIR)\typeobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\unicodectype.c
+$(INTDIR)\unicodectype.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\unicodeobject.c
+$(INTDIR)\unicodeobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\weakrefobject.c
+$(INTDIR)\weakrefobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Parser\acceler.c
+$(INTDIR)\acceler.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Parser\bitset.c
+$(INTDIR)\bitset.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Parser\grammar1.c
+$(INTDIR)\grammar1.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Parser\listnode.c
+$(INTDIR)\listnode.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Parser\metagrammar.c
+$(INTDIR)\metagrammar.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Parser\myreadline.c
+$(INTDIR)\myreadline.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Parser\node.c
+$(INTDIR)\node.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Parser\parser.c
+$(INTDIR)\parser.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Parser\parsetok.c
+$(INTDIR)\parsetok.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Parser\tokenizer.c
+$(INTDIR)\tokenizer.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE="..\..\PC\WinCE\cemodule.c"
+$(INTDIR)\cemodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE="..\..\PC\config.c"
+$(INTDIR)\config.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\dl_nt.c
+$(INTDIR)\dl_nt.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\getpathp.c
+$(INTDIR)\getpathp.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\import_nt.c
+$(INTDIR)\import_nt.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\bltinmodule.c
+$(INTDIR)\bltinmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\ceval.c
+$(INTDIR)\ceval.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\codecs.c
+$(INTDIR)\codecs.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\compile.c
+$(INTDIR)\compile.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\dynload_win.c
+$(INTDIR)\dynload_win.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\errors.c
+$(INTDIR)\errors.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\exceptions.c
+$(INTDIR)\exceptions.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\frozen.c
+$(INTDIR)\frozen.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\future.c
+$(INTDIR)\future.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\getargs.c
+$(INTDIR)\getargs.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\getcompiler.c
+$(INTDIR)\getcompiler.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\getcopyright.c
+$(INTDIR)\getcopyright.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\getopt.c
+$(INTDIR)\getopt.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\getplatform.c
+$(INTDIR)\getplatform.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\getversion.c
+$(INTDIR)\getversion.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\graminit.c
+$(INTDIR)\graminit.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\import.c
+$(INTDIR)\import.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\importdl.c
+$(INTDIR)\importdl.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\marshal.c
+$(INTDIR)\marshal.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\modsupport.c
+$(INTDIR)\modsupport.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\mysnprintf.c
+$(INTDIR)\mysnprintf.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\mystrtoul.c
+$(INTDIR)\mystrtoul.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\pyfpe.c
+$(INTDIR)\pyfpe.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\pystate.c
+$(INTDIR)\pystate.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\pythonrun.c
+$(INTDIR)\pythonrun.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\sigcheck.c
+$(INTDIR)\sigcheck.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\structmember.c
+$(INTDIR)\structmember.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\symtable.c
+$(INTDIR)\symtable.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\sysmodule.c
+$(INTDIR)\sysmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\zipimport.c
+$(INTDIR)\zipimport.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\zlibmodule.c
+$(INTDIR)\zlibmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) /I ..\..\PC\WinCE\zlib $(SOURCE)
+
+SOURCE=..\..\PC\WinCE\zlib\crc32.c
+$(INTDIR)\crc32.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\WinCE\zlib\adler32.c
+$(INTDIR)\adler32.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\WinCE\zlib\compress.c
+$(INTDIR)\compress.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\WinCE\zlib\deflate.c
+$(INTDIR)\deflate.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\WinCE\zlib\inffast.c
+$(INTDIR)\inffast.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\WinCE\zlib\inflate.c
+$(INTDIR)\inflate.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\WinCE\zlib\inftrees.c
+$(INTDIR)\inftrees.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\WinCE\zlib\trees.c
+$(INTDIR)\trees.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\WinCE\zlib\zutil.c
+$(INTDIR)\zutil.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) /U _WIN32_WCE $(SOURCE)
+
+SOURCE=..\..\Python\thread.c
+$(INTDIR)\thread.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\traceback.c
+$(INTDIR)\traceback.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\itertoolsmodule.c
+$(INTDIR)\itertoolsmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\_localemodule.c
+$(INTDIR)\_localemodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\_randommodule.c
+$(INTDIR)\_randommodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\WinCE\wince-compatibility.c
+$(INTDIR)\wince-compatibility.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\WinCe\python_nt.rc
+$(INTDIR)\python_nt.res : $(SOURCE) $(INTDIR)  binaries\lib\minimal-python23.zip
+	$(RSC) $(RSCFLAGS) /r $(SOURCE)
+
+#
+#	If we don't have the minimal-python23.zip file built, get it built now
+#
+binaries\lib\minimal-python23.zip:
+	($NMAKE) -f makefile.lib
+
+#
+#	Cleanup
+#
+CLEAN:
+	@if exist $(INTDIR) rmdir/s/q $(INTDIR)
+

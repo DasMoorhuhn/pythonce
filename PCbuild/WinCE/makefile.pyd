@@ -1,0 +1,100 @@
+#
+#	Generic build for .PYD DLLs
+#
+# Define MODULE (specifies the module to be built)
+#
+# Define SOURCE_DIRECTORY if the sources don't live in the Python "Modules" directory
+# Define SOURCE_FILE if the source file name is not the same as the module name
+# Define ADDITIONAL_CFLAGS if we need to add to the "C" Compilation flags
+# Define BASE if you want a specific base address
+# Define STACK if you want a specific stack size
+# Define ADDITIONAL_OBJECTS if you have object files to build in addition to the module object file
+# Define LIBRARIES if you want to link against additional libraries
+# Define ADDITIONAL_LFLAGS if we need to add the the Linker flags
+#        
+
+#
+#	Make sure we have a module defined
+#
+!IF "$(MODULE)" == ""
+!ERROR MODULE not specified
+!ENDIF
+
+#
+#	What we are building
+#
+RESULT=$(MODULE)
+
+#
+#	Defaults
+#
+!IF "$(BASE)" == ""
+BASE=0x00100000
+!ENDIF
+!IF "$(STACK)" == ""
+STACK=0x10000,0x1000
+!ENDIF
+!IF "$(SOURCE_DIRECTORY)" == ""
+SOURCE_DIRECTORY = ..\..\Modules
+!ENDIF
+!IF "$(SOURCE_FILE)" == ""
+SOURCE_FILE = $(MODULE).c
+!ENDIF
+
+#
+#	Calculate the object file name
+#
+OBJECT_FILE=$(SOURCE_FILE:.cpp=.obj)
+OBJECT_FILE=$(OBJECT_FILE:.c=.obj)
+
+#
+#	Include the common stuff
+#
+BUILD=$(RESULT)		#Let the common makefile stuff know what we are building
+!INCLUDE common.mk
+
+#
+#	Add additional CFLAGS
+#
+!IF "$(ADDITIONAL_CFLAGS)" != ""
+CFLAGS = $(CFLAGS) $(ADDITIONAL_CFLAGS)
+!ENDIF
+
+#
+#	The target
+#
+ALL : $(OUTDIR)\$(RESULT).pyd
+
+#
+#	The output directory
+#
+$(OUTDIR):
+    if not exist $(OUTDIR) mkdir $(OUTDIR)
+
+#
+#	The object files
+#
+LINK32_OBJS = $(INTDIR)\$(OBJECT_FILE) $(ADDITIONAL_OBJECTS)
+
+#
+#	The link step
+#
+LFLAGS=/nologo /base:$(BASE) /stack:$(STACK) /dll $(LINK32_FLAGS) $(PYTHONCORE_LIB) \
+	/nodefaultlib:python$(PYTHON_VERSION).lib 
+$(OUTDIR)\$(RESULT).pyd: $(OUTDIR) $(LINK32_OBJS)
+    $(LINK32) @<<
+  $(LFLAGS) $(ADDITIONAL_LFLAGS) /out:$(OUTDIR)\$(RESULT).pyd /pdb:$(OUTDIR)\$(RESULT).pdb $(LINK32_OBJS) $(LIBRARIES)
+<<
+
+#
+#	Source->Object dependencies for the main module
+#
+$(INTDIR)\$(OBJECT_FILE) : $(SOURCE_DIRECTORY)\$(SOURCE_FILE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE_DIRECTORY)\$(SOURCE_FILE)
+
+#
+#	Cleanup
+#
+CLEAN:
+	@if exist $(INTDIR) rmdir/s/q $(INTDIR)
+

@@ -1,0 +1,558 @@
+#
+#	Build the python library modules
+#
+
+#
+#	What we are building is pythoncore
+#
+BUILD=lib
+
+#
+#	Include the common stuff
+#
+!INCLUDE common.mk
+
+#
+#	The output directory is independent of the platform for which we are building
+#
+OUTDIR=binaries\lib
+OUTDIRS = $(OUTDIR)
+
+#
+#	We need to have PYTHONROOT define for us to be able to build anything
+#
+!IF "$(PYTHONROOT)" == ""
+!MESSAGE PYTHONROOT not defined, unable to compile Python Library Modules
+!ELSE
+
+#
+#	Define how to do the Python Compile
+#
+PYTHON_COMPILE = $(PYTHONROOT)\python $(PYTHONROOT)\Lib\py_compile.py
+
+#
+#	Define how to add to a zip library
+#
+ADD_TO_ZIPFILE=$(PYTHONROOT)\python .\add_to_zipfile.py
+
+
+#
+#	Object files for the minimal size library
+#
+MINIMAL_SIZE_ZIP_LIBRARY = $(OUTDIR)\minimal-python$(PYTHON_VERSION).zip
+MINIMAL_SIZE_LIBRARY_OBJS = \
+	$(OUTDIR)\copy_reg.pyc \
+	$(OUTDIR)\linecache.pyc \
+	$(OUTDIR)\ntpath.pyc \
+	$(OUTDIR)\os.pyc \
+	$(OUTDIR)\stat.pyc \
+	$(OUTDIR)\string.pyc \
+	$(OUTDIR)\traceback.pyc \
+	$(OUTDIR)\types.pyc \
+
+#
+#	Object files for regular expresssions
+#
+REGULAR_EXPRESSION_OBJS = \
+	$(OUTDIR)\re.pyc \
+	$(OUTDIR)\sre.pyc \
+	$(OUTDIR)\sre_compile.pyc \
+	$(OUTDIR)\sre_constants.pyc \
+	$(OUTDIR)\sre_parse.pyc \
+
+#
+#	Object files for the moderate size library
+#
+MODERATE_SIZE_ZIP_LIBRARY = $(OUTDIR)\python$(PYTHON_VERSION).zip
+MODERATE_SIZE_LIBRARY_OBJS = \
+	$(MINIMAL_SIZE_LIBRARY_OBJS) \
+	$(OUTDIR)\fnmatch.pyc \
+	$(OUTDIR)\glob.pyc \
+	$(REGULAR_EXPRESSION_OBJS) \
+
+#
+#	Object files for the full library
+#
+FULL_ZIP_LIBRARY = $(OUTDIR)\full-python$(PYTHON_VERSION).zip
+BASE_OBJS = \
+	$(MODERATE_SIZE_LIBRARY_OBJS) \
+	$(OUTDIR)\aifc.pyc \
+	$(OUTDIR)\anydbm.pyc \
+	$(OUTDIR)\asynchat.pyc \
+	$(OUTDIR)\asyncore.pyc \
+	$(OUTDIR)\atexit.pyc \
+	$(OUTDIR)\audiodev.pyc \
+	$(OUTDIR)\base64.pyc \
+	$(OUTDIR)\BaseHTTPServer.pyc \
+	$(OUTDIR)\Bastion.pyc \
+	$(OUTDIR)\bdb.pyc \
+	$(OUTDIR)\binhex.pyc \
+	$(OUTDIR)\bisect.pyc \
+	$(OUTDIR)\calendar.pyc \
+	$(OUTDIR)\CGIHTTPServer.pyc \
+	$(OUTDIR)\cgi.pyc \
+	$(OUTDIR)\cgitb.pyc \
+	$(OUTDIR)\chunk.pyc \
+	$(OUTDIR)\cmd.pyc \
+	$(OUTDIR)\codecs.pyc \
+	$(OUTDIR)\codeop.pyc \
+	$(OUTDIR)\code.pyc \
+	$(OUTDIR)\colorsys.pyc \
+	$(OUTDIR)\commands.pyc \
+	$(OUTDIR)\compileall.pyc \
+	$(OUTDIR)\ConfigParser.pyc \
+	$(OUTDIR)\Cookie.pyc \
+	$(OUTDIR)\copy.pyc \
+	$(OUTDIR)\csv.pyc \
+	$(OUTDIR)\dbhash.pyc \
+	$(OUTDIR)\difflib.pyc \
+	$(OUTDIR)\dircache.pyc \
+	$(OUTDIR)\dis.pyc \
+	$(OUTDIR)\doctest.pyc \
+	$(OUTDIR)\DocXMLRPCServer.pyc \
+	$(OUTDIR)\dumbdbm.pyc \
+	$(OUTDIR)\dummy_threading.pyc \
+	$(OUTDIR)\dummy_thread.pyc \
+	$(OUTDIR)\FCNTL.pyc \
+	$(OUTDIR)\filecmp.pyc \
+	$(OUTDIR)\fileinput.pyc \
+	$(OUTDIR)\formatter.pyc \
+	$(OUTDIR)\fpformat.pyc \
+	$(OUTDIR)\ftplib.pyc \
+	$(OUTDIR)\__future__.pyc \
+	$(OUTDIR)\getopt.pyc \
+	$(OUTDIR)\getpass.pyc \
+	$(OUTDIR)\gettext.pyc \
+	$(OUTDIR)\gopherlib.pyc \
+	$(OUTDIR)\gzip.pyc \
+	$(OUTDIR)\heapq.pyc \
+	$(OUTDIR)\hmac.pyc \
+	$(OUTDIR)\htmlentitydefs.pyc \
+	$(OUTDIR)\htmllib.pyc \
+	$(OUTDIR)\HTMLParser.pyc \
+	$(OUTDIR)\httplib.pyc \
+	$(OUTDIR)\ihooks.pyc \
+	$(OUTDIR)\imaplib.pyc \
+	$(OUTDIR)\imghdr.pyc \
+	$(OUTDIR)\imputil.pyc \
+	$(OUTDIR)\inspect.pyc \
+	$(OUTDIR)\keyword.pyc \
+	$(OUTDIR)\locale.pyc \
+	$(OUTDIR)\macpath.pyc \
+	$(OUTDIR)\macurl2path.pyc \
+	$(OUTDIR)\mailbox.pyc \
+	$(OUTDIR)\mailcap.pyc \
+	$(OUTDIR)\markupbase.pyc \
+	$(OUTDIR)\mhlib.pyc \
+	$(OUTDIR)\mimetools.pyc \
+	$(OUTDIR)\mimetypes.pyc \
+	$(OUTDIR)\MimeWriter.pyc \
+	$(OUTDIR)\mimify.pyc \
+	$(OUTDIR)\modulefinder.pyc \
+	$(OUTDIR)\multifile.pyc \
+	$(OUTDIR)\mutex.pyc \
+	$(OUTDIR)\netrc.pyc \
+	$(OUTDIR)\new.pyc \
+	$(OUTDIR)\nntplib.pyc \
+	$(OUTDIR)\nturl2path.pyc \
+	$(OUTDIR)\opcode.pyc \
+	$(OUTDIR)\optparse.pyc \
+	$(OUTDIR)\os2emxpath.pyc \
+	$(OUTDIR)\pdb.pyc \
+	$(OUTDIR)\__phello__.foo.pyc \
+	$(OUTDIR)\pickle.pyc \
+	$(OUTDIR)\pickletools.pyc \
+	$(OUTDIR)\pipes.pyc \
+	$(OUTDIR)\pkgutil.pyc \
+	$(OUTDIR)\platform.pyc \
+	$(OUTDIR)\popen2.pyc \
+	$(OUTDIR)\poplib.pyc \
+	$(OUTDIR)\posixfile.pyc \
+	$(OUTDIR)\posixpath.pyc \
+	$(OUTDIR)\pprint.pyc \
+	$(OUTDIR)\pre.pyc \
+	$(OUTDIR)\profile.pyc \
+	$(OUTDIR)\pstats.pyc \
+	$(OUTDIR)\pty.pyc \
+	$(OUTDIR)\pyclbr.pyc \
+	$(OUTDIR)\py_compile.pyc \
+	$(OUTDIR)\pydoc.pyc \
+	$(OUTDIR)\Queue.pyc \
+	$(OUTDIR)\quopri.pyc \
+	$(OUTDIR)\random.pyc \
+	$(OUTDIR)\reconvert.pyc \
+	$(OUTDIR)\regex_syntax.pyc \
+	$(OUTDIR)\regsub.pyc \
+	$(OUTDIR)\repr.pyc \
+	$(OUTDIR)\rexec.pyc \
+	$(OUTDIR)\rfc822.pyc \
+	$(OUTDIR)\rlcompleter.pyc \
+	$(OUTDIR)\robotparser.pyc \
+	$(OUTDIR)\sched.pyc \
+	$(OUTDIR)\sets.pyc \
+	$(OUTDIR)\sgmllib.pyc \
+	$(OUTDIR)\shelve.pyc \
+	$(OUTDIR)\shlex.pyc \
+	$(OUTDIR)\shutil.pyc \
+	$(OUTDIR)\SimpleHTTPServer.pyc \
+	$(OUTDIR)\SimpleXMLRPCServer.pyc \
+	$(OUTDIR)\site.pyc \
+	$(OUTDIR)\smtpd.pyc \
+	$(OUTDIR)\smtplib.pyc \
+	$(OUTDIR)\sndhdr.pyc \
+	$(OUTDIR)\socket.pyc \
+	$(OUTDIR)\SocketServer.pyc \
+	$(OUTDIR)\statcache.pyc \
+	$(OUTDIR)\statvfs.pyc \
+	$(OUTDIR)\StringIO.pyc \
+	$(OUTDIR)\stringold.pyc \
+	$(OUTDIR)\stringprep.pyc \
+	$(OUTDIR)\_strptime.pyc \
+	$(OUTDIR)\sunaudio.pyc \
+	$(OUTDIR)\sunau.pyc \
+	$(OUTDIR)\symbol.pyc \
+	$(OUTDIR)\symtable.pyc \
+	$(OUTDIR)\tabnanny.pyc \
+	$(OUTDIR)\tarfile.pyc \
+	$(OUTDIR)\telnetlib.pyc \
+	$(OUTDIR)\tempfile.pyc \
+	$(OUTDIR)\TERMIOS.pyc \
+	$(OUTDIR)\textwrap.pyc \
+	$(OUTDIR)\this.pyc \
+	$(OUTDIR)\threading.pyc \
+	$(OUTDIR)\timeit.pyc \
+	$(OUTDIR)\toaiff.pyc \
+	$(OUTDIR)\tokenize.pyc \
+	$(OUTDIR)\token.pyc \
+	$(OUTDIR)\trace.pyc \
+	$(OUTDIR)\tty.pyc \
+	$(OUTDIR)\tzparse.pyc \
+	$(OUTDIR)\unittest.pyc \
+	$(OUTDIR)\urllib2.pyc \
+	$(OUTDIR)\urllib.pyc \
+	$(OUTDIR)\urlparse.pyc \
+	$(OUTDIR)\UserDict.pyc \
+	$(OUTDIR)\UserList.pyc \
+	$(OUTDIR)\user.pyc \
+	$(OUTDIR)\UserString.pyc \
+	$(OUTDIR)\uu.pyc \
+	$(OUTDIR)\warnings.pyc \
+	$(OUTDIR)\wave.pyc \
+	$(OUTDIR)\weakref.pyc \
+	$(OUTDIR)\webbrowser.pyc \
+	$(OUTDIR)\whichdb.pyc \
+	$(OUTDIR)\whrandom.pyc \
+	$(OUTDIR)\xdrlib.pyc \
+	$(OUTDIR)\xmllib.pyc \
+	$(OUTDIR)\xmlrpclib.pyc \
+	$(OUTDIR)\zipfile.pyc \
+
+OUTDIRS = $(OUTDIRS) $(OUTDIR)\email $(OUTDIR)\email\test
+{..\..\Lib\email}.py{$(OUTDIR)\email}.pyc:
+	@copy ..\..\Lib\email\$(@B).py $(OUTDIR)\email\$(@B).py >NUL:
+	$(PYTHON_COMPILE) $(OUTDIR)\email\$(@B).py
+	@del $(OUTDIR)\email\$(@B).py
+{..\..\Lib\email\test}.py{$(OUTDIR)\email\test}.pyc:
+	@copy ..\..\Lib\email\test\$(@B).py $(OUTDIR)\email\test\$(@B).py >NUL:
+	$(PYTHON_COMPILE) $(OUTDIR)\email\test\$(@B).py
+	@del $(OUTDIR)\email\test\$(@B).py
+EMAIL_OBJS = \
+	$(OUTDIR)\email\base64MIME.pyc \
+	$(OUTDIR)\email\Charset.pyc \
+	$(OUTDIR)\email\_compat21.pyc \
+	$(OUTDIR)\email\_compat22.pyc \
+	$(OUTDIR)\email\Encoders.pyc \
+	$(OUTDIR)\email\Errors.pyc \
+	$(OUTDIR)\email\Generator.pyc \
+	$(OUTDIR)\email\Header.pyc \
+	$(OUTDIR)\email\__init__.pyc \
+	$(OUTDIR)\email\Iterators.pyc \
+	$(OUTDIR)\email\Message.pyc \
+	$(OUTDIR)\email\MIMEAudio.pyc \
+	$(OUTDIR)\email\MIMEBase.pyc \
+	$(OUTDIR)\email\MIMEImage.pyc \
+	$(OUTDIR)\email\MIMEMessage.pyc \
+	$(OUTDIR)\email\MIMEMultipart.pyc \
+	$(OUTDIR)\email\MIMENonMultipart.pyc \
+	$(OUTDIR)\email\MIMEText.pyc \
+	$(OUTDIR)\email\_parseaddr.pyc \
+	$(OUTDIR)\email\Parser.pyc \
+	$(OUTDIR)\email\quopriMIME.pyc \
+	$(OUTDIR)\email\Utils.pyc \
+	$(OUTDIR)\email\test\__init__.pyc \
+	$(OUTDIR)\email\test\test_email.pyc \
+	$(OUTDIR)\email\test\test_email_codecs.pyc \
+	$(OUTDIR)\email\test\test_email_torture.pyc \
+
+OUTDIRS = $(OUTDIRS) $(OUTDIR)\encodings
+{..\..\Lib\encodings}.py{$(OUTDIR)\encodings}.pyc:
+	@copy ..\..\Lib\encodings\$(@B).py $(OUTDIR)\encodings\$(@B).py >NUL:
+	$(PYTHON_COMPILE) $(OUTDIR)\encodings\$(@B).py
+	@del $(OUTDIR)\encodings\$(@B).py
+ENCODINGS_OBJS = \
+	$(OUTDIR)\encodings\aliases.pyc \
+	$(OUTDIR)\encodings\ascii.pyc \
+	$(OUTDIR)\encodings\base64_codec.pyc \
+	$(OUTDIR)\encodings\charmap.pyc \
+	$(OUTDIR)\encodings\cp037.pyc \
+	$(OUTDIR)\encodings\cp1006.pyc \
+	$(OUTDIR)\encodings\cp1026.pyc \
+	$(OUTDIR)\encodings\cp1140.pyc \
+	$(OUTDIR)\encodings\cp1250.pyc \
+	$(OUTDIR)\encodings\cp1251.pyc \
+	$(OUTDIR)\encodings\cp1252.pyc \
+	$(OUTDIR)\encodings\cp1253.pyc \
+	$(OUTDIR)\encodings\cp1254.pyc \
+	$(OUTDIR)\encodings\cp1255.pyc \
+	$(OUTDIR)\encodings\cp1256.pyc \
+	$(OUTDIR)\encodings\cp1257.pyc \
+	$(OUTDIR)\encodings\cp1258.pyc \
+	$(OUTDIR)\encodings\cp424.pyc \
+	$(OUTDIR)\encodings\cp437.pyc \
+	$(OUTDIR)\encodings\cp500.pyc \
+	$(OUTDIR)\encodings\cp737.pyc \
+	$(OUTDIR)\encodings\cp775.pyc \
+	$(OUTDIR)\encodings\cp850.pyc \
+	$(OUTDIR)\encodings\cp852.pyc \
+	$(OUTDIR)\encodings\cp855.pyc \
+	$(OUTDIR)\encodings\cp856.pyc \
+	$(OUTDIR)\encodings\cp857.pyc \
+	$(OUTDIR)\encodings\cp860.pyc \
+	$(OUTDIR)\encodings\cp861.pyc \
+	$(OUTDIR)\encodings\cp862.pyc \
+	$(OUTDIR)\encodings\cp863.pyc \
+	$(OUTDIR)\encodings\cp864.pyc \
+	$(OUTDIR)\encodings\cp865.pyc \
+	$(OUTDIR)\encodings\cp866.pyc \
+	$(OUTDIR)\encodings\cp869.pyc \
+	$(OUTDIR)\encodings\cp874.pyc \
+	$(OUTDIR)\encodings\cp875.pyc \
+	$(OUTDIR)\encodings\hex_codec.pyc \
+	$(OUTDIR)\encodings\idna.pyc \
+	$(OUTDIR)\encodings\__init__.pyc \
+	$(OUTDIR)\encodings\iso8859_10.pyc \
+	$(OUTDIR)\encodings\iso8859_13.pyc \
+	$(OUTDIR)\encodings\iso8859_14.pyc \
+	$(OUTDIR)\encodings\iso8859_15.pyc \
+	$(OUTDIR)\encodings\iso8859_1.pyc \
+	$(OUTDIR)\encodings\iso8859_2.pyc \
+	$(OUTDIR)\encodings\iso8859_3.pyc \
+	$(OUTDIR)\encodings\iso8859_4.pyc \
+	$(OUTDIR)\encodings\iso8859_5.pyc \
+	$(OUTDIR)\encodings\iso8859_6.pyc \
+	$(OUTDIR)\encodings\iso8859_7.pyc \
+	$(OUTDIR)\encodings\iso8859_8.pyc \
+	$(OUTDIR)\encodings\iso8859_9.pyc \
+	$(OUTDIR)\encodings\koi8_r.pyc \
+	$(OUTDIR)\encodings\koi8_u.pyc \
+	$(OUTDIR)\encodings\latin_1.pyc \
+	$(OUTDIR)\encodings\mac_cyrillic.pyc \
+	$(OUTDIR)\encodings\mac_greek.pyc \
+	$(OUTDIR)\encodings\mac_iceland.pyc \
+	$(OUTDIR)\encodings\mac_latin2.pyc \
+	$(OUTDIR)\encodings\mac_roman.pyc \
+	$(OUTDIR)\encodings\mac_turkish.pyc \
+	$(OUTDIR)\encodings\mbcs.pyc \
+	$(OUTDIR)\encodings\palmos.pyc \
+	$(OUTDIR)\encodings\punycode.pyc \
+	$(OUTDIR)\encodings\quopri_codec.pyc \
+	$(OUTDIR)\encodings\raw_unicode_escape.pyc \
+	$(OUTDIR)\encodings\rot_13.pyc \
+	$(OUTDIR)\encodings\string_escape.pyc \
+	$(OUTDIR)\encodings\undefined.pyc \
+	$(OUTDIR)\encodings\unicode_escape.pyc \
+	$(OUTDIR)\encodings\unicode_internal.pyc \
+	$(OUTDIR)\encodings\utf_16_be.pyc \
+	$(OUTDIR)\encodings\utf_16_le.pyc \
+	$(OUTDIR)\encodings\utf_16.pyc \
+	$(OUTDIR)\encodings\utf_7.pyc \
+	$(OUTDIR)\encodings\utf_8.pyc \
+	$(OUTDIR)\encodings\uu_codec.pyc \
+	$(OUTDIR)\encodings\zlib_codec.pyc \
+
+OUTDIRS = $(OUTDIRS) $(OUTDIR)\hotshot
+{..\..\Lib\hotshot}.py{$(OUTDIR)\hotshot}.pyc:
+	@copy ..\..\Lib\hotshot\$(@B).py $(OUTDIR)\hotshot\$(@B).py >NUL:
+	$(PYTHON_COMPILE) $(OUTDIR)\hotshot\$(@B).py
+	@del $(OUTDIR)\hotshot\$(@B).py
+HOTSHOT_OBJS = \
+	$(OUTDIR)\hotshot\__init__.pyc \
+	$(OUTDIR)\hotshot\log.pyc \
+	$(OUTDIR)\hotshot\stats.pyc \
+	$(OUTDIR)\hotshot\stones.pyc \
+
+OUTDIRS = $(OUTDIRS) $(OUTDIR)\lib-old
+{..\..\Lib\lib-old}.py{$(OUTDIR)\lib-old}.pyc:
+	@copy ..\..\Lib\lib-old\$(@B).py $(OUTDIR)\lib-old\$(@B).py >NUL:
+	$(PYTHON_COMPILE) $(OUTDIR)\lib-old\$(@B).py
+	@del $(OUTDIR)\lib-old\$(@B).py
+LIB_OLD_OBJS = \
+	$(OUTDIR)\lib-old\addpack.pyc \
+	$(OUTDIR)\lib-old\cmpcache.pyc \
+	$(OUTDIR)\lib-old\cmp.pyc \
+	$(OUTDIR)\lib-old\codehack.pyc \
+	$(OUTDIR)\lib-old\dircmp.pyc \
+	$(OUTDIR)\lib-old\dump.pyc \
+	$(OUTDIR)\lib-old\find.pyc \
+	$(OUTDIR)\lib-old\fmt.pyc \
+	$(OUTDIR)\lib-old\grep.pyc \
+	$(OUTDIR)\lib-old\lockfile.pyc \
+	$(OUTDIR)\lib-old\newdir.pyc \
+	$(OUTDIR)\lib-old\ni.pyc \
+	$(OUTDIR)\lib-old\packmail.pyc \
+	$(OUTDIR)\lib-old\Para.pyc \
+	$(OUTDIR)\lib-old\poly.pyc \
+	$(OUTDIR)\lib-old\rand.pyc \
+	$(OUTDIR)\lib-old\tb.pyc \
+	$(OUTDIR)\lib-old\util.pyc \
+	$(OUTDIR)\lib-old\whatsound.pyc \
+	$(OUTDIR)\lib-old\zmod.pyc \
+
+OUTDIRS = $(OUTDIRS) $(OUTDIR)\lib-tk
+{..\..\Lib\lib-tk}.py{$(OUTDIR)\lib-tk}.pyc:
+	@copy ..\..\Lib\lib-tk\$(@B).py $(OUTDIR)\lib-tk\$(@B).py >NUL:
+	$(PYTHON_COMPILE) $(OUTDIR)\lib-tk\$(@B).py
+	@del $(OUTDIR)\lib-tk\$(@B).py
+LIB_TK_OBJS = \
+	$(OUTDIR)\lib-tk\Canvas.pyc \
+	$(OUTDIR)\lib-tk\Dialog.pyc \
+	$(OUTDIR)\lib-tk\FileDialog.pyc \
+	$(OUTDIR)\lib-tk\FixTk.pyc \
+	$(OUTDIR)\lib-tk\ScrolledText.pyc \
+	$(OUTDIR)\lib-tk\SimpleDialog.pyc \
+	$(OUTDIR)\lib-tk\Tix.pyc \
+	$(OUTDIR)\lib-tk\tkColorChooser.pyc \
+	$(OUTDIR)\lib-tk\tkCommonDialog.pyc \
+	$(OUTDIR)\lib-tk\Tkconstants.pyc \
+	$(OUTDIR)\lib-tk\Tkdnd.pyc \
+	$(OUTDIR)\lib-tk\tkFileDialog.pyc \
+	$(OUTDIR)\lib-tk\tkFont.pyc \
+	$(OUTDIR)\lib-tk\Tkinter.pyc \
+	$(OUTDIR)\lib-tk\tkMessageBox.pyc \
+	$(OUTDIR)\lib-tk\tkSimpleDialog.pyc \
+	$(OUTDIR)\lib-tk\turtle.pyc \
+
+OUTDIRS = $(OUTDIRS) $(OUTDIR)\logging
+{..\..\Lib\logging}.py{$(OUTDIR)\logging}.pyc:
+	@copy ..\..\Lib\logging\$(@B).py $(OUTDIR)\logging\$(@B).py >NUL:
+	$(PYTHON_COMPILE) $(OUTDIR)\logging\$(@B).py
+	@del $(OUTDIR)\logging\$(@B).py
+LOGGING_OBJS = \
+	$(OUTDIR)\logging\config.pyc \
+	$(OUTDIR)\logging\handlers.pyc \
+	$(OUTDIR)\logging\__init__.pyc \
+
+OUTDIRS = $(OUTDIRS) $(OUTDIR)\xml $(OUTDIR)\xml\dom $(OUTDIR)\xml\parsers $(OUTDIR)\xml\sax
+{..\..\Lib\xml}.py{$(OUTDIR)\xml}.pyc:
+	@copy ..\..\Lib\xml\$(@B).py $(OUTDIR)\xml\$(@B).py >NUL:
+	$(PYTHON_COMPILE) $(OUTDIR)\xml\$(@B).py
+	@del $(OUTDIR)\xml\$(@B).py
+{..\..\Lib\xml\dom}.py{$(OUTDIR)\xml\dom}.pyc:
+	@copy ..\..\Lib\xml\dom\$(@B).py $(OUTDIR)\xml\dom\$(@B).py >NUL:
+	$(PYTHON_COMPILE) $(OUTDIR)\xml\dom\$(@B).py
+	@del $(OUTDIR)\xml\dom\$(@B).py
+{..\..\Lib\xml\parsers}.py{$(OUTDIR)\xml\parsers}.pyc:
+	@copy ..\..\Lib\xml\parsers\$(@B).py $(OUTDIR)\xml\parsers\$(@B).py >NUL:
+	$(PYTHON_COMPILE) $(OUTDIR)\xml\parsers\$(@B).py
+	@del $(OUTDIR)\xml\parsers\$(@B).py
+{..\..\Lib\xml\sax}.py{$(OUTDIR)\xml\sax}.pyc:
+	@copy ..\..\Lib\xml\sax\$(@B).py $(OUTDIR)\xml\sax\$(@B).py >NUL:
+	$(PYTHON_COMPILE) $(OUTDIR)\xml\sax\$(@B).py
+	@del $(OUTDIR)\xml\sax\$(@B).py
+XML_OBJS = \
+	$(OUTDIR)\xml\__init__.pyc \
+	$(OUTDIR)\xml\dom\domreg.pyc \
+	$(OUTDIR)\xml\dom\expatbuilder.pyc \
+	$(OUTDIR)\xml\dom\__init__.pyc \
+	$(OUTDIR)\xml\dom\minicompat.pyc \
+	$(OUTDIR)\xml\dom\minidom.pyc \
+	$(OUTDIR)\xml\dom\NodeFilter.pyc \
+	$(OUTDIR)\xml\dom\pulldom.pyc \
+	$(OUTDIR)\xml\dom\xmlbuilder.pyc \
+	$(OUTDIR)\xml\parsers\expat.pyc \
+	$(OUTDIR)\xml\parsers\__init__.pyc \
+	$(OUTDIR)\xml\sax\_exceptions.pyc \
+	$(OUTDIR)\xml\sax\expatreader.pyc \
+	$(OUTDIR)\xml\sax\handler.pyc \
+	$(OUTDIR)\xml\sax\__init__.pyc \
+	$(OUTDIR)\xml\sax\saxutils.pyc \
+	$(OUTDIR)\xml\sax\xmlreader.pyc \
+
+#
+#	The target
+#
+ALL:  $(OUTDIR) $(FULL_ZIP_LIBRARY) $(MODERATE_SIZE_ZIP_LIBRARY) $(MINIMAL_SIZE_ZIP_LIBRARY) 
+
+#
+#	This is how to compile a .py file in the ..\..\Lib directory to a .pyc file
+#
+.SUFFIXES: .py .pyc
+{..\..\Lib}.py{$(OUTDIR)}.pyc:
+	@copy ..\..\Lib\$(@B).py $(OUTDIR)\$(@B).py >NUL:
+	$(PYTHON_COMPILE) $(OUTDIR)\$(@B).py
+	@del $(OUTDIR)\$(@B).py
+
+#
+#	The full size python zip library
+#
+$(FULL_ZIP_LIBRARY): $(OUTDIRS) $(BASE_OBJS) $(EMAIL_OBJS) $(ENCODINGS_OBJS) $(HOTSHOT_OBJS) \
+		     $(LIB_OLD_OBJS) $(LIB_TK_OBJS) $(LOGGING_OBJS) $(XML_OBJS)
+	@if exist $(FULL_ZIP_LIBRARY) del $(FULL_ZIP_LIBRARY)
+	$(ADD_TO_ZIPFILE) $(FULL_ZIP_LIBRARY) $(OUTDIR)\ $(BASE_OBJS)
+	$(ADD_TO_ZIPFILE) $(FULL_ZIP_LIBRARY) $(OUTDIR)\ $(EMAIL_OBJS)
+	$(ADD_TO_ZIPFILE) $(FULL_ZIP_LIBRARY) $(OUTDIR)\ $(ENCODINGS_OBJS)
+	$(ADD_TO_ZIPFILE) $(FULL_ZIP_LIBRARY) $(OUTDIR)\ $(HOTSHOT_OBJS)
+	$(ADD_TO_ZIPFILE) $(FULL_ZIP_LIBRARY) $(OUTDIR)\ $(LIB_OLD_OBJS)
+	$(ADD_TO_ZIPFILE) $(FULL_ZIP_LIBRARY) $(OUTDIR)\ $(LIB_TK_OBJS)
+	$(ADD_TO_ZIPFILE) $(FULL_ZIP_LIBRARY) $(OUTDIR)\ $(LOGGING_OBJS)
+	$(ADD_TO_ZIPFILE) $(FULL_ZIP_LIBRARY) $(OUTDIR)\ $(XML_OBJS)
+
+#
+#	The moderate size python zip library
+#
+$(MODERATE_SIZE_ZIP_LIBRARY): $(MODERATE_SIZE_LIBRARY_OBJS)
+	@if exist $(MODERATE_SIZE_ZIP_LIBRARY) del $(MODERATE_SIZE_ZIP_LIBRARY)
+	$(ADD_TO_ZIPFILE) $(MODERATE_SIZE_ZIP_LIBRARY) $(OUTDIR)\ $(MODERATE_SIZE_LIBRARY_OBJS)
+
+#
+#	The minimal size python zip library
+#
+$(MINIMAL_SIZE_ZIP_LIBRARY): $(MINIMAL_SIZE_LIBRARY_OBJS) 
+	@if exist $(MINIMAL_SIZE_ZIP_LIBRARY) del $(MINIMAL_SIZE_ZIP_LIBRARY)
+	$(ADD_TO_ZIPFILE) $(MINIMAL_SIZE_ZIP_LIBRARY) $(OUTDIR)\ $(MINIMAL_SIZE_LIBRARY_OBJS)
+
+
+#
+#	The output directories
+#
+$(OUTDIR):
+    if not exist $(OUTDIR) mkdir $(OUTDIR)
+$(OUTDIR)\email:
+    if not exist $(OUTDIR)\email mkdir $(OUTDIR)\email
+$(OUTDIR)\email\test:
+    if not exist $(OUTDIR)\email\test mkdir $(OUTDIR)\email\test
+$(OUTDIR)\encodings:
+    if not exist $(OUTDIR)\encodings mkdir $(OUTDIR)\encodings
+$(OUTDIR)\hotshot:
+    if not exist $(OUTDIR)\hotshot mkdir $(OUTDIR)\hotshot
+$(OUTDIR)\lib-old:
+    if not exist $(OUTDIR)\lib-old mkdir $(OUTDIR)\lib-old
+$(OUTDIR)\lib-tk:
+    if not exist $(OUTDIR)\lib-tk mkdir $(OUTDIR)\lib-tk
+$(OUTDIR)\logging:
+    if not exist $(OUTDIR)\logging mkdir $(OUTDIR)\logging
+$(OUTDIR)\xml:
+    if not exist $(OUTDIR)\xml mkdir $(OUTDIR)\xml
+$(OUTDIR)\xml\dom:
+    if not exist $(OUTDIR)\xml\dom mkdir $(OUTDIR)\xml\dom
+$(OUTDIR)\xml\parsers:
+    if not exist $(OUTDIR)\xml\parsers mkdir $(OUTDIR)\xml\parsers
+$(OUTDIR)\xml\sax:
+    if not exist $(OUTDIR)\xml\sax mkdir $(OUTDIR)\xml\sax
+!ENDIF
+
+#
+#	Cleanup
+#
+CLEAN:
+	@if exist $(OUTDIR) rmdir/s/q $(OUTDIR)

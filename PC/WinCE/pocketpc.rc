@@ -1,0 +1,75 @@
+//
+//	Include the resource definitions
+//
+#include "resource.h"
+
+//
+//	Include the various standard definitions
+//
+#define APSTUDIO_READONLY_SYMBOLS
+#include "afxres.h"
+
+//
+//	Define the command bar at the bottom of the screen
+//
+IDR_MENUBAR1 RCDATA 
+BEGIN
+    IDR_MAINMENU, 2,
+    I_IMAGENONE, IDM_SHAREDNEW, TBSTATE_ENABLED, 
+    TBSTYLE_DROPDOWN | TBSTYLE_AUTOSIZE, IDS_SHNEW, 0, NOMENU,
+    I_IMAGENONE, IDM_FILE, TBSTATE_ENABLED, 
+    TBSTYLE_DROPDOWN | TBSTYLE_AUTOSIZE, IDS_SHFILE, 0, 0,
+END
+
+
+//
+//	Define the "File" Menu
+//
+IDR_MAINMENU MENU DISCARDABLE 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&About",                      IDM_HELPABOUT
+        MENUITEM SEPARATOR
+	MENUITEM "I&nterrupt",			IDM_INTERRUPT
+        MENUITEM "E&xit",                       IDM_FILEEXIT
+    END
+END
+
+//
+//	Define the "About" Dialog
+//
+IDD_ABOUT DIALOG DISCARDABLE  0, 0, 200, 280
+STYLE DS_CENTER | WS_POPUP
+FONT 8, "System"
+BEGIN
+    ICON            102,101,7,7,21,20
+    LTEXT           "Pocket PC Python",103,40,10,180,8
+
+
+    LTEXT           "Python 2.3.4 port by:",60107,7,30,180,8
+    LTEXT           "David Kashtan, Validus Medical Systems",60108,11,40,180,8
+
+    LTEXT           "Based on work by:",60109,7,55,180,8
+    LTEXT           "Brad Clements, Tel Ion, ",60110,11,65,180,8
+    LTEXT           "Mark Hammond, David Ascher ...et al",60111,11,75,180,8
+
+    LTEXT           "With financial Support from:",60112,7,90,180,8
+
+    LTEXT           "Ted Shab, Ken Manheimer,",60113,11,100,180,8
+    LTEXT           "Michael Hauser, Frank Glass,",60114,11,110,180,8
+    LTEXT           "Jeff Bauer, Val Bykovsky,",60115,11,120,180,8
+    LTEXT           "Mark Hammond, Laura Creighton,",60116,11,130,180,8
+    LTEXT           "Warren Postma",60117,11,140,180,8
+    
+END
+
+//
+//	The Python application icon
+//
+IDI_ICON                ICON    DISCARDABLE     "python.ic4"
+
+//
+//	Add the "pcceshell" source to be executed on startup
+//
+PCCESHELL	PYTHONSHELL	DISCARDABLE "pcceshell.py"

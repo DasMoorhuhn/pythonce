@@ -1,0 +1,70 @@
+#
+#	Build the python application
+#
+
+#
+#	What we are building is python
+#
+BUILD=python
+
+#
+#	The result for python core is "python"
+#
+RESULT=python
+
+#
+#	Include the common stuff
+#
+!INCLUDE common.mk
+
+#
+#	Common defintions for the python core build
+#
+LFLAGS=/nologo /stack:0x48000,0x1000 /entry:"WinMainCRTStartup" $(LINK32_FLAGS) /nodefaultlib:python$(PYTHON_VERSION).lib aygshell.lib commctrl.lib
+RSCFLAGS=/l 0x409 /fo$(INTDIR)\pocketpc.res \
+	 /i ..\..\Include /i ..\..\PC\WinCE \
+	 /d UNDER_CE=$(CEVersion) /d _WIN32_WCE=$(CEVersion) /d UNICODE /d _UNICODE /d "$(CePlatform)" /d _WIN32_WCE_PSPC \
+	 $(PLATFORM_RSCFLAGS)
+
+#
+#	The target
+#
+ALL : $(OUTDIR)\$(RESULT).exe
+
+#
+#	The output directory
+#
+"$(OUTDIR)" :
+    if not exist "$(OUTDIR)" mkdir "$(OUTDIR)"
+
+#
+#	The object files
+#
+LINK32_OBJS= \
+	"$(INTDIR)\python.obj" \
+	"$(INTDIR)\pocketpc.res"
+
+#
+#	Link step
+#
+$(OUTDIR)\$(RESULT).exe : $(OUTDIR) $(DEF_FILE) $(LINK32_OBJS)
+    $(LINK32) @<<
+  $(LFLAGS) /out:$(OUTDIR)\$(RESULT).exe /pdb:$(OUTDIR)\$(RESULT).pdb $(LINK32_OBJS)
+<<
+
+#
+#	Source->Object dependencies
+#
+SOURCE=..\..\PC\WinCE\python.c
+$(INTDIR)\python.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) /DPYTHON_DLL_NAME=python$(PYTHON_VERSION).dll $(SOURCE)
+
+SOURCE=..\..\PC\WinCE\pocketpc.rc
+$(INTDIR)\pocketpc.res : $(SOURCE) $(INTDIR) ..\..\PC\WinCE\pcceshell.py
+	$(RSC) $(RSCFLAGS) /r $(SOURCE)
+
+#
+#	Cleanup
+#
+CLEAN:
+	@if exist $(INTDIR) rmdir/s/q $(INTDIR)

@@ -1,0 +1,13 @@
+//
+//	Windows/CE specific resources for the Python DLL
+//
+
+//
+//	Get the Windows resources
+//
+#include "..\python_nt.rc"
+
+//
+//	Add the ZIP library with the minimal python library modules
+//
+PYTHON23.ZIP   PYTHONZIP  DISCARDABLE  "binaries\\lib\\minimal-python23.zip"
