@@ -27,6 +27,7 @@ import socket
 import os
 import time
 import sys
+from urlparse import urljoin as basejoin
 
 __all__ = ["urlopen", "URLopener", "FancyURLopener", "urlretrieve",
            "urlcleanup", "quote", "quote_plus", "unquote", "unquote_plus",
@@ -36,7 +37,7 @@ __all__ = ["urlopen", "URLopener", "FancyURLopener", "urlretrieve",
            "splitnport", "splitquery", "splitattr", "splitvalue",
            "splitgophertype", "getproxies"]
 
-__version__ = '1.15'    # XXX This version is not always updated :-(
+__version__ = '1.16'    # XXX This version is not always updated :-(
 
 MAXFTPCACHE = 10        # Trim the ftp cache beyond this size
 
@@ -49,8 +50,13 @@ elif os.name == 'riscos':
     from rourl2path import url2pathname, pathname2url
 else:
     def url2pathname(pathname):
+        """OS-specific conversion from a relative URL of the 'file' scheme
+        to a file system path; not recommended for general use."""
         return unquote(pathname)
+
     def pathname2url(pathname):
+        """OS-specific conversion from a file system path to a relative URL
+        of the 'file' scheme; not recommended for general use."""
         return quote(pathname)
 
 # This really consists of two pieces:
@@ -85,6 +91,11 @@ def urlcleanup():
     if _urlopener:
         _urlopener.cleanup()
 
+# exception raised when downloaded size does not match content-length
+class ContentTooShortError(IOError):
+    def __init__(self, message, content):
+        IOError.__init__(self, message)
+        self.content = content
 
 ftpcache = {}
 class URLopener:
@@ -168,9 +179,7 @@ class URLopener:
             proxy = None
         name = 'open_' + urltype
         self.type = urltype
-        if '-' in name:
-            # replace - with _
-            name = '_'.join(name.split('-'))
+        name = name.replace('-', '_')
         if not hasattr(self, name):
             if proxy:
                 return self.open_unknown_proxy(proxy, fullurl, data)
@@ -229,24 +238,31 @@ class URLopener:
             self.tempcache[url] = result
         bs = 1024*8
         size = -1
-        blocknum = 1
+        read = 0
+        blocknum = 0
         if reporthook:
             if "content-length" in headers:
                 size = int(headers["Content-Length"])
-            reporthook(0, bs, size)
-        block = fp.read(bs)
-        if reporthook:
-            reporthook(1, bs, size)
-        while block:
-            tfp.write(block)
+            reporthook(blocknum, bs, size)
+        while 1:
             block = fp.read(bs)
-            blocknum = blocknum + 1
+            if block == "":
+                break
+            read += len(block)
+            tfp.write(block)
+            blocknum += 1
             if reporthook:
                 reporthook(blocknum, bs, size)
         fp.close()
         tfp.close()
         del fp
         del tfp
+
+        # raise exception if actual size does not match content-length header
+        if size >= 0 and read < size:
+            raise ContentTooShortError("retrieval incomplete: got only %i out "
+                                       "of %i bytes" % (read, size), result)
+
         return result
 
     # Each method named open_<type> knows how to open that type of URL
@@ -369,7 +385,7 @@ class URLopener:
                 h.putheader('Content-length', '%d' % len(data))
             else:
                 h.putrequest('GET', selector)
-            if auth: h.putheader('Authorization: Basic %s' % auth)
+            if auth: h.putheader('Authorization', 'Basic %s' % auth)
             if realhost: h.putheader('Host', realhost)
             for args in self.addheaders: h.putheader(*args)
             h.endheaders()
@@ -411,7 +427,11 @@ class URLopener:
 
     def open_local_file(self, url):
         """Use local file."""
-        import mimetypes, mimetools, rfc822, StringIO
+        import mimetypes, mimetools, email.Utils
+        try:
+            from cStringIO import StringIO
+        except ImportError:
+            from StringIO import StringIO
         host, file = splithost(url)
         localname = url2pathname(file)
         try:
@@ -419,9 +439,9 @@ class URLopener:
         except OSError, e:
             raise IOError(e.errno, e.strerror, e.filename)
         size = stats.st_size
-        modified = rfc822.formatdate(stats.st_mtime)
+        modified = email.Utils.formatdate(stats.st_mtime, usegmt=True)
         mtype = mimetypes.guess_type(url)[0]
-        headers = mimetools.Message(StringIO.StringIO(
+        headers = mimetools.Message(StringIO(
             'Content-Type: %s\nContent-Length: %d\nLast-modified: %s\n' %
             (mtype or 'text/plain', size, modified)))
         if not host:
@@ -442,7 +462,11 @@ class URLopener:
 
     def open_ftp(self, url):
         """Use FTP protocol."""
-        import mimetypes, mimetools, StringIO
+        import mimetypes, mimetools
+        try:
+            from cStringIO import StringIO
+        except ImportError:
+            from StringIO import StringIO
         host, path = splithost(url)
         if not host: raise IOError, ('ftp error', 'no host given')
         host, port = splitport(host)
@@ -491,7 +515,7 @@ class URLopener:
                 headers += "Content-Type: %s\n" % mtype
             if retrlen is not None and retrlen >= 0:
                 headers += "Content-Length: %d\n" % retrlen
-            headers = mimetools.Message(StringIO.StringIO(headers))
+            headers = mimetools.Message(StringIO(headers))
             return addinfourl(fp, headers, "ftp:" + url)
         except ftperrors(), msg:
             raise IOError, ('ftp error', msg), sys.exc_info()[2]
@@ -505,7 +529,11 @@ class URLopener:
         # mediatype := [ type "/" subtype ] *( ";" parameter )
         # data      := *urlchar
         # parameter := attribute "=" value
-        import StringIO, mimetools
+        import mimetools
+        try:
+            from cStringIO import StringIO
+        except ImportError:
+            from StringIO import StringIO
         try:
             [type, data] = url.split(',', 1)
         except ValueError:
@@ -531,9 +559,9 @@ class URLopener:
         msg.append('')
         msg.append(data)
         msg = '\n'.join(msg)
-        f = StringIO.StringIO(msg)
+        f = StringIO(msg)
         headers = mimetools.Message(f, 0)
-        f.fileno = None     # needed for addinfourl
+        #f.fileno = None     # needed for addinfourl
         return addinfourl(f, headers, url)
 
 
@@ -698,8 +726,11 @@ def noheaders():
     global _noheaders
     if _noheaders is None:
         import mimetools
-        import StringIO
-        _noheaders = mimetools.Message(StringIO.StringIO(), 0)
+        try:
+            from cStringIO import StringIO
+        except ImportError:
+            from StringIO import StringIO
+        _noheaders = mimetools.Message(StringIO(), 0)
         _noheaders.fp.close()   # Recycle file descriptor
     return _noheaders
 
@@ -787,15 +818,18 @@ class addbase:
         self.read = self.fp.read
         self.readline = self.fp.readline
         if hasattr(self.fp, "readlines"): self.readlines = self.fp.readlines
-        if hasattr(self.fp, "fileno"): self.fileno = self.fp.fileno
+        if hasattr(self.fp, "fileno"):
+            self.fileno = self.fp.fileno
+        else:
+            self.fileno = lambda: None
         if hasattr(self.fp, "__iter__"):
             self.__iter__ = self.fp.__iter__
             if hasattr(self.fp, "next"):
                 self.next = self.fp.next
 
     def __repr__(self):
-        return '<%s at %s whose fp = %s>' % (self.__class__.__name__,
-                                             `id(self)`, `self.fp`)
+        return '<%s at %r whose fp = %r>' % (self.__class__.__name__,
+                                             id(self), self.fp)
 
     def close(self):
         self.read = None
@@ -843,64 +877,6 @@ class addinfourl(addbase):
 
     def geturl(self):
         return self.url
-
-
-def basejoin(base, url):
-    """Utility to combine a URL with a base URL to form a new URL."""
-    type, path = splittype(url)
-    if type:
-        # if url is complete (i.e., it contains a type), return it
-        return url
-    host, path = splithost(path)
-    type, basepath = splittype(base) # inherit type from base
-    if host:
-        # if url contains host, just inherit type
-        if type: return type + '://' + host + path
-        else:
-            # no type inherited, so url must have started with //
-            # just return it
-            return url
-    host, basepath = splithost(basepath) # inherit host
-    basepath, basetag = splittag(basepath) # remove extraneous cruft
-    basepath, basequery = splitquery(basepath) # idem
-    if path[:1] != '/':
-        # non-absolute path name
-        if path[:1] in ('#', '?'):
-            # path is just a tag or query, attach to basepath
-            i = len(basepath)
-        else:
-            # else replace last component
-            i = basepath.rfind('/')
-        if i < 0:
-            # basepath not absolute
-            if host:
-                # host present, make absolute
-                basepath = '/'
-            else:
-                # else keep non-absolute
-                basepath = ''
-        else:
-            # remove last file component
-            basepath = basepath[:i+1]
-        # Interpret ../ (important because of symlinks)
-        while basepath and path[:3] == '../':
-            path = path[3:]
-            i = basepath[:-1].rfind('/')
-            if i > 0:
-                basepath = basepath[:i+1]
-            elif i == 0:
-                basepath = '/'
-                break
-            else:
-                basepath = ''
-
-        path = basepath + path
-    if host and path and path[0] != '/':
-        path = '/' + path
-    if type and host: return type + '://' + host + path
-    elif type: return type + ':' + path
-    elif host: return '//' + host + path # don't know what this means
-    else: return path
 
 
 # Utilities to parse URLs (most of these return None for missing parts):
@@ -1081,51 +1057,31 @@ def splitgophertype(selector):
         return selector[1], selector[2:]
     return None, selector
 
+_hextochr = dict(('%02x' % i, chr(i)) for i in range(256))
+_hextochr.update(('%02X' % i, chr(i)) for i in range(256))
+
 def unquote(s):
     """unquote('abc%20def') -> 'abc def'."""
-    mychr = chr
-    myatoi = int
-    list = s.split('%')
-    res = [list[0]]
-    myappend = res.append
-    del list[0]
-    for item in list:
-        if item[1:2]:
-            try:
-                myappend(mychr(myatoi(item[:2], 16))
-                     + item[2:])
-            except ValueError:
-                myappend('%' + item)
-        else:
-            myappend('%' + item)
+    res = s.split('%')
+    for i in xrange(1, len(res)):
+        item = res[i]
+        try:
+            res[i] = _hextochr[item[:2]] + item[2:]
+        except KeyError:
+            res[i] = '%' + item
+        except UnicodeDecodeError:
+            res[i] = unichr(int(item[:2], 16)) + item[2:]
     return "".join(res)
 
 def unquote_plus(s):
     """unquote('%7e/abc+def') -> '~/abc def'"""
-    if '+' in s:
-        # replace '+' with ' '
-        s = ' '.join(s.split('+'))
+    s = s.replace('+', ' ')
     return unquote(s)
 
 always_safe = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ'
                'abcdefghijklmnopqrstuvwxyz'
                '0123456789' '_.-')
-
-_fast_safe_test = always_safe + '/'
-_fast_safe = None
-
-def _fast_quote(s):
-    global _fast_safe
-    if _fast_safe is None:
-        _fast_safe = {}
-        for c in _fast_safe_test:
-            _fast_safe[c] = c
-    res = list(s)
-    for i in range(len(res)):
-        c = res[i]
-        if not c in _fast_safe:
-            res[i] = '%%%02X' % ord(c)
-    return ''.join(res)
+_safemaps = {}
 
 def quote(s, safe = '/'):
     """quote('abc def') -> 'abc%20def'
@@ -1148,25 +1104,25 @@ def quote(s, safe = '/'):
     called on a path where the existing slash characters are used as
     reserved characters.
     """
-    safe = always_safe + safe
-    if _fast_safe_test == safe:
-        return _fast_quote(s)
-    res = list(s)
-    for i in range(len(res)):
-        c = res[i]
-        if c not in safe:
-            res[i] = '%%%02X' % ord(c)
+    cachekey = (safe, always_safe)
+    try:
+        safe_map = _safemaps[cachekey]
+    except KeyError:
+        safe += always_safe
+        safe_map = {}
+        for i in range(256):
+            c = chr(i)
+            safe_map[c] = (c in safe) and c or ('%%%02X' % i)
+        _safemaps[cachekey] = safe_map
+    res = map(safe_map.__getitem__, s)
     return ''.join(res)
 
 def quote_plus(s, safe = ''):
     """Quote the query fragment of a URL; replacing ' ' with '+'"""
     if ' ' in s:
-        l = s.split(' ')
-        for i in range(len(l)):
-            l[i] = quote(l[i], safe)
-        return '+'.join(l)
-    else:
-        return quote(s, safe)
+        s = quote(s, safe + ' ')
+        return s.replace(' ', '+')
+    return quote(s, safe)
 
 def urlencode(query,doseq=0):
     """Encode a sequence of two-element tuples or dictionary into a URL query string.
@@ -1248,8 +1204,8 @@ def getproxies_environment():
             proxies[name[:-6]] = value
     return proxies
 
-if os.name == 'mac':
-    def getproxies():
+if sys.platform == 'darwin':
+    def getproxies_internetconfig():
         """Return a dictionary of scheme -> proxy server URL mappings.
 
         By convention the mac uses Internet Config to store
@@ -1281,6 +1237,9 @@ if os.name == 'mac':
 
     def proxy_bypass(x):
         return 0
+
+    def getproxies():
+        return getproxies_environment() or getproxies_internetconfig()
 
 elif os.name == 'nt':
     def getproxies_registry():
@@ -1407,9 +1366,9 @@ def test1():
     t1 = time.time()
     if uqs != s:
         print 'Wrong!'
-    print `s`
-    print `qs`
-    print `uqs`
+    print repr(s)
+    print repr(qs)
+    print repr(uqs)
     print round(t1 - t0, 3), 'sec'
 
 

@@ -1,5 +1,7 @@
 /*
- *	On Windows/CE we need to have our own time.h
+ *	On Windows/CE we need to have our own time.h, because even though
+ *	the SDK supplies a time.h the functions are not defined in any
+ *	SDK libraries (i.e. the SDK headers are buggy)
  */
 #ifndef	_TIME_H
 #define	_TIME_H	1
@@ -19,9 +21,25 @@ struct tm {
         };
 #endif // _TM_DEFINED
 
-__declspec(dllexport) void tzset(void);
-__declspec(dllexport) extern char *tzname[2];
-__declspec(dllexport) extern long timezone;
-__declspec(dllexport) extern int daylight;
+extern DL_IMPORT(void) tzset(void);
+extern DL_IMPORT(char *) tzname[2];
+extern DL_IMPORT(long) timezone;
+extern DL_IMPORT(int) daylight;
+
+#ifndef _CLOCK_T_DEFINED    /* only if the SDK time.h does not define them */
+typedef unsigned long clock_t;
+#define _CLOCK_T_DEFINED
+#endif  /* _CLOCK_T_DEFINED */
+
+#define	CLOCKS_PER_SEC	1000	/* Someday when clock() works we'll get back Milliseconds of CPU time */
+
+extern DL_IMPORT(clock_t) clock(void);
+extern DL_IMPORT(struct tm *) gmtime(const time_t *);
+extern DL_IMPORT(struct tm *) localtime(const time_t *);
+extern DL_IMPORT(time_t) time(time_t *);
+extern DL_IMPORT(char *) asctime(const struct tm *);
+extern DL_IMPORT(char *) ctime(const time_t *);
+extern DL_IMPORT(time_t) mktime(struct tm *);
+extern DL_IMPORT(size_t) strftime(char *, size_t, const char *, const struct tm *);
 
 #endif	/* _TIME_H */

@@ -1,9 +1,12 @@
 /*
+ vi:tabstop=8:shiftwidth=8:noexpandtab
  *	Compatibility functions for Windows/CE (makes it as much like Windows as possible)
  *
  *	David kashtan, Validus Medical Systems
  */
 #include "Python.h"
+
+#define ISSLASH(c)	((c) == TEXT('\\') || (c) == TEXT('/'))
 
 #ifdef _M_ARM
 /*
@@ -34,6 +37,43 @@ static WCHAR *Current_Directory = Default_Current_Directory;
 
 
 /*
+ *	WinCE has more restrictive path handling than Windows NT so we
+ *	need to do some conversions for compatibility
+ */
+static void _WinCE_CanonicalizePath(WCHAR *pszPath)
+{
+	WCHAR *p = pszPath;
+
+	/* Replace forward slashes with backslashes */
+	while(*p) {
+		if(*p == L'/')
+			*p = L'\\';
+		p++;
+	}
+	/* Strip \. and \.. from the beginning of absolute paths */
+	p = pszPath;
+	while(p[0] == '\\' && p[1] == L'.') {
+		if(p[2] == '.') {
+			/* Skip \.. */
+			p += 3;
+		} else {
+			/* Skip \. */
+			p += 2;
+		}
+	}
+	if(!*p) {
+		/* If we stripped everything then return the root \
+		 * instead of an empty path
+		 */
+		wcscpy(pszPath, L"\\");
+	} else if(p != pszPath) {
+		/* We skipped something so we need to delete it */
+		int size = (wcslen(p) + 1) * sizeof(WCHAR);
+		memmove(pszPath, p, size);
+	}
+}
+
+/*
  *	WCHAR version of _WinCE_Absolute_Path
  */
 void _WinCE_Absolute_Path_WCHAR(const WCHAR *Path, WCHAR *Buffer, int Buffer_Size)
@@ -45,36 +85,45 @@ void _WinCE_Absolute_Path_WCHAR(const WCHAR *Path, WCHAR *Buffer, int Buffer_Siz
 	/*
 	 *	Check for already being an absolute path
 	 */
-	if (*Path == TEXT('\\')) {
+	if (ISSLASH(*Path)) {
 		/*
 		 *	Yes: Just return it
 		 */
 		Path_Length = wcslen(Path);
 		if (Path_Length >= Buffer_Size) Path_Length = Buffer_Size - 1;
-		CopyMemory(Buffer, Path, Path_Length * sizeof(WCHAR));
+		memcpy(Buffer, Path, Path_Length * sizeof(WCHAR));
 		Buffer[Path_Length] = '\0';
+		_WinCE_CanonicalizePath(Buffer);
 		return;
 	}
 	/*
 	 *	Need to turn it into an absolute path: Peel off "." and ".."
 	 */
 	cp = (WCHAR *)Path;	
+	/* cp1 points to the null terminator */
 	cp1 = Current_Directory; while(*cp1) cp1++;
 	while(*cp == TEXT('.')) {
-		if (cp[1] == TEXT('\\')) {
+		if (ISSLASH(cp[1])) {
+			/* Strip ".\\" from beginning */
 			cp += 2;
 			continue;
 		}
 		if (cp[1] == TEXT('\0')) {
+			/* "." is the same as no path */
 			cp++;
 			break;
 		}
+		/* Handle filenames like ".abc" */
 		if (cp[1] != TEXT('.')) break;
-		if ((cp[2] != TEXT('\\')) && (cp[2] != TEXT('\0'))) break;
+		/* Handle filenames like "..abc" */
+		if (!ISSLASH(cp[2]) && (cp[2] != TEXT('\0'))) break;
+		/* Skip ".." */
 		cp += 2;
+		/* Skip backslash following ".." */
 		if (*cp) cp++;
+		/* Find the final backslash in the current directory path */
 		while(cp1 > Current_Directory)
-			if (*--cp1 == TEXT('\\')) break;
+			if (ISSLASH(*--cp1)) break;
 	}
 	/*
 	 *	Now look for device specifications (and get the length of the path
@@ -87,8 +136,9 @@ void _WinCE_Absolute_Path_WCHAR(const WCHAR *Path, WCHAR *Buffer, int Buffer_Siz
 			 */
 			Path_Length = wcslen(Path);
 			if (Path_Length >= Buffer_Size) Path_Length = Buffer_Size - 1;
-			CopyMemory(Buffer, Path, Path_Length * sizeof(WCHAR));
+			memcpy(Buffer, Path, Path_Length * sizeof(WCHAR));
 			Buffer[Path_Length] = '\0';
+			_WinCE_CanonicalizePath(Buffer);
 			return;
 		}
 	}
@@ -96,7 +146,7 @@ void _WinCE_Absolute_Path_WCHAR(const WCHAR *Path, WCHAR *Buffer, int Buffer_Siz
 	/*
 	 *	Trim off trailing "\\"
 	 */
-	if ((Path_Length > 0) && (cp[-1] == TEXT('\\'))) Path_Length--;
+	if ((Path_Length > 0) && (ISSLASH(cp[-1]))) Path_Length--;
 	/*
 	 *	If we backed up past the root, we are at the root
 	 */
@@ -107,7 +157,7 @@ void _WinCE_Absolute_Path_WCHAR(const WCHAR *Path, WCHAR *Buffer, int Buffer_Siz
 	 */
 	Buffer_Size -= 2; /* Account for the null terminator and the path separator */
 	if (Directory_Length >= Buffer_Size) Directory_Length = Buffer_Size;
-	CopyMemory(Buffer, Current_Directory, Directory_Length * sizeof(WCHAR));
+	memcpy(Buffer, Current_Directory, Directory_Length * sizeof(WCHAR));
 	Buffer[Directory_Length] = TEXT('\\');
 	Buffer_Size -= Directory_Length;
 	/*
@@ -118,8 +168,9 @@ void _WinCE_Absolute_Path_WCHAR(const WCHAR *Path, WCHAR *Buffer, int Buffer_Siz
 	 *	Output the path (truncated as necessary)
 	 */
 	if (Path_Length >= Buffer_Size) Path_Length = Buffer_Size;
-	CopyMemory(Buffer + Directory_Length + 1, Path, Path_Length * sizeof(WCHAR));
+	memcpy(Buffer + Directory_Length + 1, Path, Path_Length * sizeof(WCHAR));
 	Buffer[Directory_Length + 1 + Path_Length] = '\0';
+	_WinCE_CanonicalizePath(Buffer);
 	return;
 }
 
@@ -171,7 +222,7 @@ int _WinCE_Absolute_Path(PyObject *Path, WCHAR *Buffer, int Buffer_Size)
 
 /*
  *	There is no concept of the current working directory on Windows/CE,
- *	So we make it \Windows\Temp (for now)
+ *	so we simulate it
  */
 __declspec(dllexport) char *getcwd(char *Buffer, int Buffer_Size)
 {
@@ -185,12 +236,22 @@ __declspec(dllexport) char *getcwd(char *Buffer, int Buffer_Size)
 	return(Buffer);
 }
 
+__declspec(dllexport) wchar_t *wgetcwd(wchar_t *Buffer, int Buffer_Size)
+{
+	int n = wcslen(Current_Directory);
+	if(n >= Buffer_Size)
+		n = Buffer_Size - 1;
+	memcpy(Buffer, Current_Directory, n * sizeof(wchar_t));
+	Buffer[n] = L'\0';
+	return Buffer;
+}
+
 /*
  *	The missing "C" runtime abort() function
  */
 __declspec(dllexport) void abort(void)
 {
-	ExitThread((UINT)3);
+	ExitProcess(3);
 }
 
 /*
@@ -214,8 +275,8 @@ __declspec(dllexport) int unlink(const char *Path)
 /*
  *	Time conversion constants
  */
-#define FT_EPOCH ((__int64)116444736000000000)
-#define	FT_TICKS ((__int64)10000000)
+#define FT_EPOCH (116444736000000000i64)
+#define	FT_TICKS (10000000i64)
 
 /*
  *	Wide version of the missing "C" runtime stat() function
@@ -227,7 +288,6 @@ int _wstat(const WCHAR *Path, struct stat *st)
 	WCHAR *p;
 	unsigned dmode;
 	WCHAR Absolute_Path[MAX_PATH + 1];
-#define ISSLASH(c)	((c) == (TEXT('\\') || (c) == TEXT('/')))
 #define A_RO	0x1
 #define A_D	0x10
 
@@ -287,7 +347,7 @@ int _wstat(const WCHAR *Path, struct stat *st)
 	st->st_size=(unsigned long int)Data.nFileSizeLow;
 	st->st_uid=0;
 	st->st_gid=0;
-	st->st_ino=0;
+	st->st_ino=0 /*Data.dwOID ?*/;
 	st->st_dev=0;
 	/*
 	 *	Return success
@@ -307,7 +367,7 @@ __declspec(dllexport) int stat(const char *Path, struct stat *st)
 	 *	Check for ".zip" files
 	 */
 	if (Check_For_ZIP_Resource(Path, 0)) {
-		ZeroMemory(st, sizeof(*st));
+		memset(st, 0, sizeof(*st));
 		st->st_mode = S_IFREG;
 		return(0);
 	}
@@ -399,7 +459,7 @@ __declspec(dllexport) int _wchdir(const WCHAR *Path)
 	Length = wcslen(Absolute_Path);
 	cp = (WCHAR *)LocalAlloc(0, (Length + 1) * sizeof(WCHAR));
 	if (!cp) return(-1);
-	CopyMemory(cp, Absolute_Path, Length * sizeof(WCHAR));
+	memcpy(cp, Absolute_Path, Length * sizeof(WCHAR));
 	cp[Length] = TEXT('\0');
 	/*
 	 *	Free up any old allocation and store the new current directory
@@ -724,7 +784,7 @@ __declspec(dllexport) void __WinCE_OutputDebugStringA(const char *String)
 	/*
 	 *	Convert to wide string
 	 */
-	n = MultiByteToWideChar(CP_ACP, 0, String, -1, Local_String, sizeof(Local_String));
+	n = MultiByteToWideChar(CP_ACP, 0, String, -1, Local_String, sizeof(Local_String)/sizeof(TCHAR));
 	Local_String[n] = _T('\0');
 	/*
 	 *	Now we can do the OutputDebugStringW
@@ -819,7 +879,7 @@ static int Check_For_ZIP_Resource(const char *Path, HRSRC *ResourceP)
 	 */
 	cp = Path;
 	while(*cp) {
-		if (*cp == '\\') Path = cp + 1;
+		if (ISSLASH(*cp)) Path = cp + 1;
 		cp++;
 	}
 	Length = cp - Path;
@@ -972,7 +1032,7 @@ __declspec(dllexport) FILE *WinCE_fopen(const char *Filename, const char *Mode)
 					 */
 					p = (struct _ZIP_Resource_File *)LocalAlloc(0, sizeof(*p));
 					if (p) {
-						ZeroMemory(p, sizeof(*p));
+						memset(p, 0, sizeof(*p));
 						p->Data = Data;
 						p->Size = Size;
 						p->Resource_Data = Resource_Data;
@@ -1103,7 +1163,7 @@ __declspec(dllexport) size_t WinCE_fread(void *Pointer, size_t Size, size_t NMem
 			/*
 			 *	Copy the data and update the current position
 			 */
-			if (i > 0) CopyMemory(Pointer, p->Data + p->Position, i);
+			if (i > 0) memcpy(Pointer, p->Data + p->Position, i);
 			p->Position += i;
 			i /= Size;
 			if (i == 0) i = EOF; /* If nothing read, return EOF */
@@ -1184,6 +1244,7 @@ __declspec(dllexport) int WinCE_fclose(FILE *fp)
 	return(fclose(fp));
 }
 
+#if 0	/* using _strdup() instead now */
 /*
  *	Missing strdup() function
  */
@@ -1201,9 +1262,10 @@ __declspec(dllexport) char *strdup(const char *String)
 	 *	Allocate storage for it and copy it
 	 */
 	New_String = (char *)malloc(cp - String);
-	if (New_String) CopyMemory(New_String, String, cp - String);
+	if (New_String) memcpy(New_String, String, cp - String);
 	return(New_String);
 }
+#endif
 
 /*
  *	Missing strcoll() funciton
@@ -1229,7 +1291,7 @@ __declspec(dllexport) size_t strxfrm(char *dest, char *src, size_t n)
 	cp = src;
 	while(*cp++);
 	if (n < (size_t)(cp - src)) n = (cp - src);
-	if (n > 0) CopyMemory(dest, src, n);
+	if (n > 0) memcpy(dest, src, n);
 	return(n);
 }
 
@@ -1385,7 +1447,7 @@ static void Get_Locale_Information(void)
 					/*
 					 *	Copy to dynamic memory and store
 					 */
-					CopyMemory(cp, (char *)Temp, n);
+					memcpy(cp, (char *)Temp, n);
 					cp[n] = '\0';
 					*(char **)p->Field = cp;
 				}
@@ -1836,7 +1898,7 @@ void *WinCE_realloc(void *Ptr, int Size)
 	 *	Not enough room: Get a new allocation and copy the old data to it
 	 */
 	New_Allocation = WinCE_malloc(Size);
-	if (New_Allocation && (Size > 0)) CopyMemory(New_Allocation, Ptr, Size);
+	if (New_Allocation && (Size > 0)) memcpy(New_Allocation, Ptr, Size);
 	/*
 	 *	Free the old allocation and return the new one
 	 */

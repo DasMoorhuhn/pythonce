@@ -63,9 +63,9 @@ SWIG = $(SWIGROOT)\swig -python -I$(SWIGROOT)\swig_lib -DMS_WINCE -d nul:
 !ENDIF 
 
 #
-#	Python Version (2.3)
+#	Python Version (2.4)
 #
-PYTHON_VERSION=23
+PYTHON_VERSION=24
 
 #
 #	Common Compiler Flags
@@ -88,10 +88,10 @@ LINK32=link.exe
 #
 #	Now we can cobble up the definitions
 #
-OUTDIR=binaries\$(PLATFORM_OUTDIR)\$(BUILD)
+OUTDIR=binaries\$(PLATFORM_OUTDIR)
 INTDIR=binaries\$(PLATFORM_INTDIR)\$(BUILD)
 CPP=$(PLATFORM_CPP)
 CPP_PROJ=$(PLATFORM_CPP_PROJ)
 LINK32_FLAGS=$(PLATFORM_LINK32_FLAGS)
 LINK32_DLL_FLAGS=$(PLATFORM_LINK32_DLL_FLAGS)
-PYTHONCORE_LIB=binaries\$(PLATFORM_OUTDIR)\pythoncore\python$(PYTHON_VERSION)$(PLATFORM_DLL_SUFFIX).lib
+PYTHONCORE_LIB=binaries\$(PLATFORM_OUTDIR)\python$(PYTHON_VERSION)$(PLATFORM_DLL_SUFFIX).lib

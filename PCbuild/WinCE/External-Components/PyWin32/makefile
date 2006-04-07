@@ -15,6 +15,8 @@ NMAKE=nmake /nologo
 ALL_COMPONENTS= pywintypes \
 		win32event \
 		win32gui   \
+		win32process \
+		wince
 
 #
 #	The default target is all the components
@@ -56,6 +58,22 @@ win32event:
 	@cd External-Components\PyWin32
 
 #
+#	win32process:
+#
+win32process:
+	@cd ..\..
+	@$(NMAKE) -f External-Components\PyWin32\makefile.win32process  SWIGROOT=$(SWIGROOT)
+	@cd External-Components\PyWin32
+
+#
+#	wince:
+#
+wince:
+	@cd ..\..
+	@$(NMAKE) -f External-Components\PyWin32\makefile.wince  SWIGROOT=$(SWIGROOT)
+	@cd External-Components\PyWin32
+
+#
 #	Clean up everything
 #
 clean:
@@ -63,6 +81,8 @@ clean:
 	@$(NMAKE) -f External-Components\PyWin32\makefile.pywintypes clean
 	@$(NMAKE) -f External-Components\PyWin32\makefile.win32gui clean
 	@$(NMAKE) -f External-Components\PyWin32\makefile.win32event clean
+	@$(NMAKE) -f External-Components\PyWin32\makefile.win32process clean
+	@$(NMAKE) -f External-Components\PyWin32\makefile.wince clean
 	@cd External-Components\PyWin32
 
 

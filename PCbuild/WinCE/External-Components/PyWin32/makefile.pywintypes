@@ -31,7 +31,10 @@ ALL : $(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll
 #	The output directory
 #
 $(OUTDIR):
-    if not exist $(OUTDIR) mkdir $(OUTDIR)
+	if not exist $(OUTDIR) mkdir $(OUTDIR)
+
+$(INTDIR):
+	if not exist $(INTDIR) mkdir $(INTDIR)
 
 #
 #	The object files
@@ -47,6 +50,8 @@ LINK32_OBJS= \
 	$(INTDIR)\PySID.obj \
 	$(INTDIR)\PyTime.obj \
 	$(INTDIR)\PyUnicode.obj \
+	$(INTDIR)\PyWAVEFORMATEX.obj \
+	$(INTDIR)\PyDEVMODE.obj \
 	$(INTDIR)\PyWinTypesmodule.obj \
 	$(INTDIR)\PyWinTypes_WinCE_Compatibility.obj \
 
@@ -56,7 +61,7 @@ LINK32_OBJS= \
 LFLAGS=/nologo /base:0x1e600000 /stack:0x10000,0x1000 /dll /entry:"_DllMainCRTStartup" \
 	$(LINK32_FLAGS) oleaut32.lib $(PYTHONCORE_LIB) /nodefaultlib:python$(PYTHON_VERSION).lib \
 	/implib:$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).lib
-$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll: $(OUTDIR) $(LINK32_OBJS)
+$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll: $(OUTDIR) $(INTDIR) $(LINK32_OBJS)
     $(LINK32) @<<
   $(LFLAGS) /out:$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll /pdb:$(OUTDIR)\$(RESULT).pdb $(LINK32_OBJS)
 <<
@@ -106,11 +111,19 @@ SOURCE=$(PYWIN32ROOT)\win32\src\PyUnicode.cpp
 $(INTDIR)\PyUnicode.obj : $(SOURCE) $(INTDIR)
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
+SOURCE=$(PYWIN32ROOT)\win32\src\PyWAVEFORMATEX.cpp
+$(INTDIR)\PyWAVEFORMATEX.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=$(PYWIN32ROOT)\win32\src\PyDEVMODE.cpp
+$(INTDIR)\PyDEVMODE.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
 SOURCE=$(PYWIN32ROOT)\win32\src\PyWinTypesmodule.cpp
 $(INTDIR)\PyWinTypesmodule.obj : $(SOURCE) $(INTDIR)
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
-SOURCE=..\..\PC\WinCE\PyWin32\PyWinTypes_WinCE_Compatibility.c
+SOURCE=$(PYWIN32ROOT)\win32\src\PyWinTypes_WinCE_Compatibility.c
 $(INTDIR)\PyWinTypes_WinCE_Compatibility.obj : $(SOURCE) $(INTDIR)
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
@@ -120,4 +133,5 @@ $(INTDIR)\PyWinTypes_WinCE_Compatibility.obj : $(SOURCE) $(INTDIR)
 #
 CLEAN:
 	@if exist $(INTDIR) rmdir/s/q $(INTDIR)
+	@del $(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).*
 

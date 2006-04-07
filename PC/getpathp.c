@@ -11,7 +11,7 @@
    * Python always adds an empty entry at the start, which corresponds
      to the current directory.
 
-   * If the PYTHONPATH env. var. exists, it's entries are added next.
+   * If the PYTHONPATH env. var. exists, its entries are added next.
 
    * We look in the registry for "application paths" - that is, sub-keys
      under the main PythonPath registry key.  These are added next (the
@@ -137,7 +137,15 @@ ismodule(char *filename)	/* Is module -- check for .pyc/.pyo too */
 	return 0;
 }
 
-/* guarantees buffer will never overflow MAXPATHLEN+1 bytes */
+/* Add a path component, by appending stuff to buffer.
+   buffer must have at least MAXPATHLEN + 1 bytes allocated, and contain a
+   NUL-terminated string with no more than MAXPATHLEN characters (not counting
+   the trailing NUL).  It's a fatal error if it contains a string longer than
+   that (callers must be careful!).  If these requirements are met, it's
+   guaranteed that buffer will still be a NUL-terminated string with no more
+   than MAXPATHLEN characters at exit.  If stuff is too long, only as much of
+   stuff as fits will be appended.
+*/
 static void
 join(char *buffer, char *stuff)
 {
@@ -149,6 +157,8 @@ join(char *buffer, char *stuff)
 		if (n > 0 && !is_sep(buffer[n-1]) && n < MAXPATHLEN)
 			buffer[n++] = SEP;
 	}
+	if (n > MAXPATHLEN)
+		Py_FatalError("buffer overflow in getpathp.c's joinpath()");
 	k = strlen(stuff);
 	if (n + k > MAXPATHLEN)
 		k = MAXPATHLEN - n;

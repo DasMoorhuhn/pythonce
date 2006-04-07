@@ -75,6 +75,7 @@ _FUNCTION(Tcl_CreateTimerHandler) \
 _FUNCTION(Tcl_DoOneEvent) \
 _FUNCTION(Tcl_DeleteInterp) \
 _FUNCTION(Tcl_SetVar) \
+_FUNCTION(Tcl_GetVar) \
 _FUNCTION(Tcl_SetVar2) \
 _FUNCTION(Tcl_GetObjType) \
 _FUNCTION(Tcl_CreateInterp) \

@@ -249,6 +249,9 @@ void (*_Tcl_DeleteInterp) (Tcl_Interp * interp);
 #define Tcl_SetVar (*_Tcl_Dynload._Tcl_SetVar)
 char * (*_Tcl_SetVar) (Tcl_Interp * interp, char * varName, char * newValue, int flags);
 
+#define Tcl_GetVar (*_Tcl_Dynload._Tcl_GetVar)
+char * (*_Tcl_GetVar) (Tcl_Interp * interp, char * varName, int flags);
+
 #define Tcl_SetVar2 (*_Tcl_Dynload._Tcl_SetVar2)
 char * (*_Tcl_SetVar2) (Tcl_Interp * interp, char * part1, char * part2, char * newValue, int flags);
 

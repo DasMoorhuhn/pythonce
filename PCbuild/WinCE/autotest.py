@@ -29,7 +29,7 @@ sys.path = New_Path
 _Null_File = None
 def _get_original_stdout():
 	global _Null_File
-	if _Null_File is None: _Null_File = open("\\Program Files\\Python\\Lib\\Test\Null-File.txt", "w")
+	if _Null_File is None: _Null_File = open("\\Temp\\null-file.txt", "w")
 	return _Null_File
 import test.test_support
 test.test_support.get_original_stdout = _get_original_stdout
@@ -43,10 +43,7 @@ import os.path
 os.path.curdir = os.getcwd()
 os.curdir = os.path.curdir
 
-#
-#	Let the tests know that we support unicode filenames
-#
-os.path.supports_unicode_filenames = True
+assert os.path.supports_unicode_filenames == True
 
 #
 #	Import the socket module and substitute our own getservbyname() so the socket
@@ -63,7 +60,7 @@ sys.original_platform = sys.platform
 sys.platform = "win32"
 
 #
-#	Make sleep wait for an integral number of seconds -- this is so the random
+#	Force sleep() to wait for at least one second -- this is so the random
 #	test will always get a new seed
 #
 def _sleep(n):
@@ -78,26 +75,30 @@ time.sleep = _sleep
 #
 #	Change the expected output for test_longexp from 65580 to 30000
 #	(we don't have enough memory for the full length test)
+#	REMOVED: the non-hack way is to patch test_longexp
 #
-try:
-    f=open("\\Program Files\\Python\\Lib\\test\\output\\test_longexp","r")
-    lines = f.readlines()
-    f.close()
-    if lines[1] == "65580\n":
-	lines[1] = "30000\n"
-	f=open("\\Program Files\\Python\\Lib\\test\\output\\test_longexp","w")
-	f.writelines(lines)
-	f.close()
-except:
-    pass
+#try:
+#    f=open("\\Program Files\\Python\\Lib\\test\\output\\test_longexp","r")
+#    lines = f.readlines()
+#    f.close()
+#    if lines[1] == "65580\n":
+#	lines[1] = "30000\n"
+#	f=open("\\Program Files\\Python\\Lib\\test\\output\\test_longexp","w")
+#	f.writelines(lines)
+#	f.close()
+#except:
+#    pass
 
 #
 #	Change posixpath.ismount() to return true so we pass the mount test
+#	REMOVED: the real reasons that the test was failing were because stat()
+#	didn't support forward slashes or \.. at the beginning of an absolute
+#	path
 #
-import posixpath
-_original_ismount = posixpath.ismount
-def _ismount(path): return True
-posixpath.ismount = _ismount
+#import posixpath
+#_original_ismount = posixpath.ismount
+#def _ismount(path): return True
+#posixpath.ismount = _ismount
 
 #
 #	Find all the tests
@@ -145,4 +146,7 @@ def test2():
     try: regrtest.main(tests)
     except SystemExit: print "Ignoring sys.exit"
 
+def test3(lst):
+    try: regrtest.main(lst)
+    except SystemExit: print "Ignoring sys.exit"
 

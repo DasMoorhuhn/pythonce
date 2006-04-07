@@ -40,11 +40,6 @@ my_getpagesize(void)
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-#ifndef MS_SYNC
-/* This is missing e.g. on SunOS 4.1.4 */
-#define MS_SYNC 0
-#endif
-
 #if defined(HAVE_SYSCONF) && defined(_SC_PAGESIZE)
 static int
 my_getpagesize(void)
@@ -107,6 +102,8 @@ mmap_object_dealloc(mmap_object *m_obj)
 #endif /* MS_WINDOWS */
 
 #ifdef UNIX
+	if (m_obj->fd >= 0)
+		(void) close(m_obj->fd);
 	if (m_obj->data!=NULL) {
 		msync(m_obj->data, m_obj->size, MS_SYNC);
 		munmap(m_obj->data, m_obj->size);
@@ -144,6 +141,8 @@ mmap_close_method(mmap_object *self, PyObject *args)
 #endif /* MS_WINDOWS */
 
 #ifdef UNIX
+	(void) close(self->fd);
+	self->fd = -1;
 	if (self->data != NULL) {
 		munmap(self->data, self->size);
 		self->data = NULL;
@@ -443,6 +442,11 @@ mmap_resize_method(mmap_object *self,
 #else
 	} else {
 		void *newmap;
+
+		if (ftruncate(self->fd, new_size) == -1) {
+			PyErr_SetFromErrno(mmap_module_error);
+			return NULL;
+		}
 
 #ifdef MREMAP_MAYMOVE
 		newmap = mremap(self->data, self->size, new_size, MREMAP_MAYMOVE);
@@ -926,13 +930,25 @@ new_mmap_object(PyObject *self, PyObject *args, PyObject *kwdict)
 #endif
 	m_obj = PyObject_New (mmap_object, &mmap_object_type);
 	if (m_obj == NULL) {return NULL;}
+	m_obj->data = NULL;
 	m_obj->size = (size_t) map_size;
 	m_obj->pos = (size_t) 0;
-	m_obj->fd = fd;
+	if (fd == -1) {
+		m_obj->fd = -1;
+	} else {
+		m_obj->fd = dup(fd);
+		if (m_obj->fd == -1) {
+			Py_DECREF(m_obj);
+			PyErr_SetFromErrno(mmap_module_error);
+			return NULL;
+		}
+	}
+
 	m_obj->data = mmap(NULL, map_size, 
 			   prot, flags,
 			   fd, 0);
 	if (m_obj->data == (char *)-1) {
+	        m_obj->data = NULL;
 		Py_DECREF(m_obj);
 		PyErr_SetFromErrno(mmap_module_error);
 		return NULL;

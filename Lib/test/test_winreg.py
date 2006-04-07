@@ -8,8 +8,11 @@ from test.test_support import verify, have_unicode
 
 test_key_name = "SOFTWARE\\Python Registry Test Key - Delete Me"
 
-BIG_SIZE = (2**14)
-if os.name == "ce": BIG_SIZE = (2**10)
+BIG_BINARY = (2**14)
+BIG_SZ = BIG_BINARY
+if os.name == "ce":
+    BIG_BINARY = 4096   # Windows CE limits the size of registry data
+    BIG_SZ = BIG_BINARY / 2     # because characters are two bytes each
 
 test_data = [
     ("Int Value",     45,                                      REG_DWORD),
@@ -17,8 +20,8 @@ test_data = [
     ("StringExpand",  "The path is %path%",                    REG_EXPAND_SZ),
     ("Multi-string",  ["Lots", "of", "string", "values"],      REG_MULTI_SZ),
     ("Raw Data",      ("binary"+chr(0)+"data"),                REG_BINARY),
-    ("Big String",    "x"*BIG_SIZE,                            REG_SZ),
-    ("Big Binary",    "x"*BIG_SIZE,                            REG_BINARY),
+    ("Big String",    "x"*(BIG_SZ-1),                          REG_SZ),
+    ("Big Binary",    "x"*BIG_BINARY,                          REG_BINARY),
 ]
 if have_unicode:
     test_data+=[
@@ -42,8 +45,10 @@ def WriteTestData(root_key):
     # Check we wrote as many items as we thought.
     nkeys, nvalues, since_mod = QueryInfoKey(key)
     verify(nkeys==1, "Not the correct number of sub keys")
-    if os.name == "ce": expected_nvalues = 0
-    else: expectd_nvalues = 1
+    if os.name == "ce":
+        expected_nvalues = 0
+    else:
+        expected_nvalues = 1
     verify(nvalues==expected_nvalues, "Not the correct number of values")
     nkeys, nvalues, since_mod = QueryInfoKey(sub_key)
     verify(nkeys==0, "Not the correct number of sub keys")

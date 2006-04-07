@@ -98,13 +98,16 @@ BASE_OBJS = \
 	$(OUTDIR)\codeop.pyc \
 	$(OUTDIR)\code.pyc \
 	$(OUTDIR)\colorsys.pyc \
+	$(OUTDIR)\cookielib.pyc \
 	$(OUTDIR)\commands.pyc \
 	$(OUTDIR)\compileall.pyc \
 	$(OUTDIR)\ConfigParser.pyc \
 	$(OUTDIR)\Cookie.pyc \
 	$(OUTDIR)\copy.pyc \
+	$(OUTDIR)\copy_reg.pyc \
 	$(OUTDIR)\csv.pyc \
 	$(OUTDIR)\dbhash.pyc \
+	$(OUTDIR)\decimal.pyc \
 	$(OUTDIR)\difflib.pyc \
 	$(OUTDIR)\dircache.pyc \
 	$(OUTDIR)\dis.pyc \
@@ -113,9 +116,9 @@ BASE_OBJS = \
 	$(OUTDIR)\dumbdbm.pyc \
 	$(OUTDIR)\dummy_threading.pyc \
 	$(OUTDIR)\dummy_thread.pyc \
-	$(OUTDIR)\FCNTL.pyc \
 	$(OUTDIR)\filecmp.pyc \
 	$(OUTDIR)\fileinput.pyc \
+	$(OUTDIR)\fnmatch.pyc \
 	$(OUTDIR)\formatter.pyc \
 	$(OUTDIR)\fpformat.pyc \
 	$(OUTDIR)\ftplib.pyc \
@@ -123,6 +126,7 @@ BASE_OBJS = \
 	$(OUTDIR)\getopt.pyc \
 	$(OUTDIR)\getpass.pyc \
 	$(OUTDIR)\gettext.pyc \
+	$(OUTDIR)\glob.pyc \
 	$(OUTDIR)\gopherlib.pyc \
 	$(OUTDIR)\gzip.pyc \
 	$(OUTDIR)\heapq.pyc \
@@ -137,7 +141,9 @@ BASE_OBJS = \
 	$(OUTDIR)\imputil.pyc \
 	$(OUTDIR)\inspect.pyc \
 	$(OUTDIR)\keyword.pyc \
+	$(OUTDIR)\linecache.pyc \
 	$(OUTDIR)\locale.pyc \
+	$(OUTDIR)\_LWPCookieJar.pyc \
 	$(OUTDIR)\macpath.pyc \
 	$(OUTDIR)\macurl2path.pyc \
 	$(OUTDIR)\mailbox.pyc \
@@ -149,15 +155,18 @@ BASE_OBJS = \
 	$(OUTDIR)\MimeWriter.pyc \
 	$(OUTDIR)\mimify.pyc \
 	$(OUTDIR)\modulefinder.pyc \
+	$(OUTDIR)\_MozillaCookieJar.pyc \
 	$(OUTDIR)\multifile.pyc \
 	$(OUTDIR)\mutex.pyc \
 	$(OUTDIR)\netrc.pyc \
 	$(OUTDIR)\new.pyc \
 	$(OUTDIR)\nntplib.pyc \
+	$(OUTDIR)\ntpath.pyc \
 	$(OUTDIR)\nturl2path.pyc \
 	$(OUTDIR)\opcode.pyc \
 	$(OUTDIR)\optparse.pyc \
 	$(OUTDIR)\os2emxpath.pyc \
+	$(OUTDIR)\os.pyc \
 	$(OUTDIR)\pdb.pyc \
 	$(OUTDIR)\__phello__.foo.pyc \
 	$(OUTDIR)\pickle.pyc \
@@ -170,7 +179,6 @@ BASE_OBJS = \
 	$(OUTDIR)\posixfile.pyc \
 	$(OUTDIR)\posixpath.pyc \
 	$(OUTDIR)\pprint.pyc \
-	$(OUTDIR)\pre.pyc \
 	$(OUTDIR)\profile.pyc \
 	$(OUTDIR)\pstats.pyc \
 	$(OUTDIR)\pty.pyc \
@@ -184,6 +192,7 @@ BASE_OBJS = \
 	$(OUTDIR)\regex_syntax.pyc \
 	$(OUTDIR)\regsub.pyc \
 	$(OUTDIR)\repr.pyc \
+	$(OUTDIR)\re.pyc \
 	$(OUTDIR)\rexec.pyc \
 	$(OUTDIR)\rfc822.pyc \
 	$(OUTDIR)\rlcompleter.pyc \
@@ -202,11 +211,17 @@ BASE_OBJS = \
 	$(OUTDIR)\sndhdr.pyc \
 	$(OUTDIR)\socket.pyc \
 	$(OUTDIR)\SocketServer.pyc \
+	$(OUTDIR)\sre_compile.pyc \
+	$(OUTDIR)\sre_constants.pyc \
+	$(OUTDIR)\sre_parse.pyc \
+	$(OUTDIR)\sre.pyc \
 	$(OUTDIR)\statcache.pyc \
+	$(OUTDIR)\stat.pyc \
 	$(OUTDIR)\statvfs.pyc \
 	$(OUTDIR)\StringIO.pyc \
 	$(OUTDIR)\stringold.pyc \
 	$(OUTDIR)\stringprep.pyc \
+	$(OUTDIR)\string.pyc \
 	$(OUTDIR)\_strptime.pyc \
 	$(OUTDIR)\sunaudio.pyc \
 	$(OUTDIR)\sunau.pyc \
@@ -216,16 +231,18 @@ BASE_OBJS = \
 	$(OUTDIR)\tarfile.pyc \
 	$(OUTDIR)\telnetlib.pyc \
 	$(OUTDIR)\tempfile.pyc \
-	$(OUTDIR)\TERMIOS.pyc \
 	$(OUTDIR)\textwrap.pyc \
 	$(OUTDIR)\this.pyc \
 	$(OUTDIR)\threading.pyc \
+	$(OUTDIR)\_threading_local.pyc \
 	$(OUTDIR)\timeit.pyc \
 	$(OUTDIR)\toaiff.pyc \
 	$(OUTDIR)\tokenize.pyc \
 	$(OUTDIR)\token.pyc \
+	$(OUTDIR)\traceback.pyc \
 	$(OUTDIR)\trace.pyc \
 	$(OUTDIR)\tty.pyc \
+	$(OUTDIR)\types.pyc \
 	$(OUTDIR)\tzparse.pyc \
 	$(OUTDIR)\unittest.pyc \
 	$(OUTDIR)\urllib2.pyc \
@@ -245,7 +262,8 @@ BASE_OBJS = \
 	$(OUTDIR)\xdrlib.pyc \
 	$(OUTDIR)\xmllib.pyc \
 	$(OUTDIR)\xmlrpclib.pyc \
-	$(OUTDIR)\zipfile.pyc \
+	$(OUTDIR)\zipfile.pyc
+#	$(OUTDIR)\subprocess.pyc
 
 OUTDIRS = $(OUTDIRS) $(OUTDIR)\email $(OUTDIR)\email\test
 {..\..\Lib\email}.py{$(OUTDIR)\email}.pyc:
@@ -259,10 +277,9 @@ OUTDIRS = $(OUTDIRS) $(OUTDIR)\email $(OUTDIR)\email\test
 EMAIL_OBJS = \
 	$(OUTDIR)\email\base64MIME.pyc \
 	$(OUTDIR)\email\Charset.pyc \
-	$(OUTDIR)\email\_compat21.pyc \
-	$(OUTDIR)\email\_compat22.pyc \
 	$(OUTDIR)\email\Encoders.pyc \
 	$(OUTDIR)\email\Errors.pyc \
+	$(OUTDIR)\email\FeedParser.pyc \
 	$(OUTDIR)\email\Generator.pyc \
 	$(OUTDIR)\email\Header.pyc \
 	$(OUTDIR)\email\__init__.pyc \
@@ -293,6 +310,9 @@ ENCODINGS_OBJS = \
 	$(OUTDIR)\encodings\aliases.pyc \
 	$(OUTDIR)\encodings\ascii.pyc \
 	$(OUTDIR)\encodings\base64_codec.pyc \
+	$(OUTDIR)\encodings\big5.pyc \
+	$(OUTDIR)\encodings\big5hkscs.pyc \
+	$(OUTDIR)\encodings\bz2_codec.pyc \
 	$(OUTDIR)\encodings\charmap.pyc \
 	$(OUTDIR)\encodings\cp037.pyc \
 	$(OUTDIR)\encodings\cp1006.pyc \
@@ -327,14 +347,34 @@ ENCODINGS_OBJS = \
 	$(OUTDIR)\encodings\cp869.pyc \
 	$(OUTDIR)\encodings\cp874.pyc \
 	$(OUTDIR)\encodings\cp875.pyc \
+	$(OUTDIR)\encodings\cp932.pyc \
+	$(OUTDIR)\encodings\cp949.pyc \
+	$(OUTDIR)\encodings\cp950.pyc \
+	$(OUTDIR)\encodings\euc_jisx0213.pyc \
+	$(OUTDIR)\encodings\euc_jis_2004.pyc \
+	$(OUTDIR)\encodings\euc_jp.pyc \
+	$(OUTDIR)\encodings\euc_kr.pyc \
+	$(OUTDIR)\encodings\gb18030.pyc \
+	$(OUTDIR)\encodings\gb2312.pyc \
+	$(OUTDIR)\encodings\gbk.pyc \
 	$(OUTDIR)\encodings\hex_codec.pyc \
+	$(OUTDIR)\encodings\hp_roman8.pyc \
+	$(OUTDIR)\encodings\hz.pyc \
 	$(OUTDIR)\encodings\idna.pyc \
-	$(OUTDIR)\encodings\__init__.pyc \
+	$(OUTDIR)\encodings\iso2022_jp.pyc \
+	$(OUTDIR)\encodings\iso2022_jp_1.pyc \
+	$(OUTDIR)\encodings\iso2022_jp_2.pyc \
+	$(OUTDIR)\encodings\iso2022_jp_2004.pyc \
+	$(OUTDIR)\encodings\iso2022_jp_3.pyc \
+	$(OUTDIR)\encodings\iso2022_jp_ext.pyc \
+	$(OUTDIR)\encodings\iso2022_kr.pyc \
+	$(OUTDIR)\encodings\iso8859_1.pyc \
 	$(OUTDIR)\encodings\iso8859_10.pyc \
+	$(OUTDIR)\encodings\iso8859_11.pyc \
 	$(OUTDIR)\encodings\iso8859_13.pyc \
 	$(OUTDIR)\encodings\iso8859_14.pyc \
 	$(OUTDIR)\encodings\iso8859_15.pyc \
-	$(OUTDIR)\encodings\iso8859_1.pyc \
+	$(OUTDIR)\encodings\iso8859_16.pyc \
 	$(OUTDIR)\encodings\iso8859_2.pyc \
 	$(OUTDIR)\encodings\iso8859_3.pyc \
 	$(OUTDIR)\encodings\iso8859_4.pyc \
@@ -343,6 +383,7 @@ ENCODINGS_OBJS = \
 	$(OUTDIR)\encodings\iso8859_7.pyc \
 	$(OUTDIR)\encodings\iso8859_8.pyc \
 	$(OUTDIR)\encodings\iso8859_9.pyc \
+	$(OUTDIR)\encodings\johab.pyc \
 	$(OUTDIR)\encodings\koi8_r.pyc \
 	$(OUTDIR)\encodings\koi8_u.pyc \
 	$(OUTDIR)\encodings\latin_1.pyc \
@@ -354,21 +395,27 @@ ENCODINGS_OBJS = \
 	$(OUTDIR)\encodings\mac_turkish.pyc \
 	$(OUTDIR)\encodings\mbcs.pyc \
 	$(OUTDIR)\encodings\palmos.pyc \
+	$(OUTDIR)\encodings\ptcp154.pyc \
 	$(OUTDIR)\encodings\punycode.pyc \
 	$(OUTDIR)\encodings\quopri_codec.pyc \
 	$(OUTDIR)\encodings\raw_unicode_escape.pyc \
 	$(OUTDIR)\encodings\rot_13.pyc \
+	$(OUTDIR)\encodings\shift_jis.pyc \
+	$(OUTDIR)\encodings\shift_jisx0213.pyc \
+	$(OUTDIR)\encodings\shift_jis_2004.pyc \
 	$(OUTDIR)\encodings\string_escape.pyc \
+	$(OUTDIR)\encodings\tis_620.pyc \
 	$(OUTDIR)\encodings\undefined.pyc \
 	$(OUTDIR)\encodings\unicode_escape.pyc \
 	$(OUTDIR)\encodings\unicode_internal.pyc \
+	$(OUTDIR)\encodings\utf_16.pyc \
 	$(OUTDIR)\encodings\utf_16_be.pyc \
 	$(OUTDIR)\encodings\utf_16_le.pyc \
-	$(OUTDIR)\encodings\utf_16.pyc \
 	$(OUTDIR)\encodings\utf_7.pyc \
 	$(OUTDIR)\encodings\utf_8.pyc \
 	$(OUTDIR)\encodings\uu_codec.pyc \
 	$(OUTDIR)\encodings\zlib_codec.pyc \
+	$(OUTDIR)\encodings\__init__.pyc
 
 OUTDIRS = $(OUTDIRS) $(OUTDIR)\hotshot
 {..\..\Lib\hotshot}.py{$(OUTDIR)\hotshot}.pyc:
@@ -526,7 +573,7 @@ $(MINIMAL_SIZE_ZIP_LIBRARY): $(MINIMAL_SIZE_LIBRARY_OBJS)
 #	The output directories
 #
 $(OUTDIR):
-    if not exist $(OUTDIR) mkdir $(OUTDIR)
+	if not exist $(OUTDIR) mkdir $(OUTDIR)
 $(OUTDIR)\email:
     if not exist $(OUTDIR)\email mkdir $(OUTDIR)\email
 $(OUTDIR)\email\test:

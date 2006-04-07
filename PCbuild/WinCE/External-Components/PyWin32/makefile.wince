@@ -1,0 +1,27 @@
+#
+#	Build the wince.pyd DLL
+#
+!INCLUDE common.mk
+
+MODULE=wince
+SOURCE_DIRECTORY=$(PYWIN32ROOT)\win32\src
+SOURCE_FILE=$(MODULE)module_wince.cpp
+ADDITIONAL_CFLAGS= /D WIN32GUI
+LIBRARIES = binaries\$(PLATFORM_OUTDIR)\pywintypes$(PLATFORM_DLL_SUFFIX).lib aygshell.lib commdlg.lib commctrl.lib ceshell.lib htmlview.lib
+ADDITIONAL_LFLAGS=/export:init$(MODULE) /nodefaultlib:pywintypes.lib /nodefaultlib:pywintypes_d.lib
+#ADDITIONAL_OBJECTS=$(INTDIR)\pywincetypesmodule.obj
+ADDITIONAL_OBJECTS=$(INTDIR)\winceres.res
+
+!INCLUDE makefile.pyd
+
+RSCFLAGS=/l 0x409 /d "$(CePlatform)" /d UNDER_CE=$(CEVersion) /d _WIN32_WCE=$(CEVersion) /d "UNICODE" /d "_UNICODE" $(PLATFORM_RSCFLAGS) /r 
+
+$(SOURCE_DIRECTORY)\$(SOURCE_FILE): $(SOURCE_DIRECTORY)\$(MODULE).i
+	$(SWIG) -c++ -o $(SOURCE_DIRECTORY)\$(SOURCE_FILE) $(SOURCE_DIRECTORY)\$(MODULE).i
+
+$(INTDIR)\pywincetypesmodule.obj : $(SOURCE_DIRECTORY)\pywincetypesmodule.cpp $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE_DIRECTORY)\pywincetypesmodule.cpp
+
+$(INTDIR)\winceres.res : $(SOURCE_DIRECTORY)\winceres.rc $(INTDIR)
+	$(RSC) $(RSCFLAGS) /fo"$(INTDIR)\winceres.res" $(SOURCE_DIRECTORY)\winceres.rc
+

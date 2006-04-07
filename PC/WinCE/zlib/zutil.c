@@ -140,7 +140,7 @@ const char * ZEXPORT zError(err)
     return ERR_MSG(err);
 }
 
-#if defined(_WIN32_WCE)
+#if 0//defined(_WIN32_WCE)
     /* does not exist on WCE */
     int errno = 0;
 #endif

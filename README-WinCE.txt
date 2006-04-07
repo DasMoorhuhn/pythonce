@@ -1,0 +1,146 @@
+These are the sources required to build Python (currently version 2.4.3)
+for Windows CE.  Go to the PCbuild/WinCE directory and do an "nmake" to build
+Python 2.4.3 for Windows/CE.
+
+There is a sample file (WCEARM.BAT) file to set up the compilation
+environment for ARM using Embedded Visual C++ 4.0 and the
+Pocket PC 2003 SDK.  WCEARM300.BAT sets up the compilation environment
+for Embedded Visual C++ 3.0 and the Pocket PC 2002 SDK.
+
+The default build is ARMREL (StrongARM Release).  To get a debug build
+do "nmake CFG=ARMDEB".
+
+Each build (and architecture) puts its binary files in a separate hierachy
+under PCBuild/WinCE/binaries.  For example, building for target ARMREL and
+Pocket PC 2003 you would find the binaries in PCBuild\WinCE\binaries\ARMRel420.
+Building for target ARMDEB a Pocket PC 2002 you would the binaries in
+PCBuild\WinCE\binaries\ARMDeb300.  All the compiled Python files (which are common
+to all builds on all architectures) end up in PCBuild\WinCE\binaries\lib.
+
+If you have a problem using Embedded Visual C++ IDE to debug
+projects that are built entirely out of an external makefile, there is a small
+project in the directory (python.vcp -- which is for Embedded Visual C++ 4.0)
+that you can use the build a debug Python.exe that is easier to debug
+using the IDE.
+
+-------------------------------------------------------------------------------------
+
+Step-by-step guide to building:
+
+- Assume the source is in c:\source\python-wince, referred to as $src
+- Edit $src/PCbuild/WinCE/wcearm.bat
+    - set WCEROOT the place where Microsoft eMbedded C++ 4.0 lives
+      (by default it is C:\Program Files\Microsoft eMbedded C++ 4.0)
+    - set SDKROOT to the place where SDKs are installed
+      (by default it is C:\Program Files\Windows CE Tools)
+    - set PYTHONROOT to the directory where you have installed Python on your PC
+    - if you are building pywin32, set PYWIN32ROOT to the source root
+    - if you are not using the Pocket PC 2003 SDK, change PLATFORM
+- Start a command prompt
+- cd to $src/PCbuild/WinCE
+- Run: wcearm.bat (this sets all the environment variables)
+- The release build is the default, but if want a debug build: set CFG=ARMDEB
+- Run: nmake
+- Run: nmake pywin32 (optional)
+
+-------------------------------------------------------------------------------------
+
+Installing the compiled binaries:
+
+To install, create a base directory (e.g. \Program Files\Python) and
+put the following files there:
+
+<base>
+    python24.dll
+    python.exe
+    python24.zip (renamed from full-python.zip)
+    DLLs (subdirectory)
+        _csv.pyd
+        _socket.pyd
+        _symtable.pyd
+        _testcapi.pyd
+        _winreg.pyd
+        datetime.pyd
+        mmap.pyd
+        parser.pyd
+        pyexpat.pyd
+        pywintypes.dll
+        select.pyd
+        unicodedata.pyd
+        win32event.pyd
+        win32gui.pyd
+        winsound.pyd
+    Lib (subdirectory)
+        os.py
+    
+Note that Lib\os.py must exist because it is used as a "landmark" to verify
+the location of Python.
+
+-------------------------------------------------------------------------------------
+
+New Features:
+
+  Based on Python 2.4.3
+
+  More Windows compatibility code has been added so the Windows/CE
+  Python shares just about ALL of its code with the Windows version
+  of Python.  It should now be bug-for-bug compatible with Python
+  on full-blown Windows platforms.
+
+  The old "pcceshell", which required a LOT of other things to
+  work in order to function at all, has been replaced almost
+  entirely by code in the main program stub (python.c).  There
+  is a small amount of Python-level code that is placed as a
+  resource in python.exe, so EVERYTHING needed to support a
+  minimal running interaction window is self-contained.  It is
+  no longer necessary to have win32gui, win32event and pywintypes
+  installed in order to run Python on Windows/CE.
+
+  Support for ZIP archives of Python modules has been added.
+  It is now possible to package up Python modules in ZIP files
+  just like on Windows and Unix platforms.
+
+  Support has been added for reading ZIP archives that have been
+  placed as resources in the Python DLL or in main programs that
+  call the Python DLL.  For example, if you added a resource like the
+  following to a program:
+     PYTHON24.ZIP   PYTHONZIP  DISCARDABLE  "binaries\\lib\\minimal-python24.zip"
+  When the zipimport loader attempts to load a module from a path
+  that ends in python24.zip and the file is not found, this resource
+  will be used.  It allows you to package up a program and a bunch of
+  Python modules in one easy-to-use image.
+
+  The Python DLL has a PYTHON24.ZIP resource that contains a minimal
+  set of python modules.  It allows the full traceback function to work.
+
+  There are 2 ZIP files: python24.zip, which can be placed in the
+  \\Program Files\Python\Lib directory to override the minimal one
+  that is in the python24 DLL.  This file has more basic stuff in
+  it but not everything.  full-python24.zip can be placed in
+  \\Program Files\Python\Lib as python24.zip to get everything that
+  is in Windows Python except the following:
+	bsddb	   - There is no _bsddb "C" support yet, so it can't work
+	compiler   - I haven't seen the need for this
+		     (somebody tell me if they want it)
+	curses	   - Useless on a Pocket PC
+	distutils  - Same as compiler
+	idlelib	   - Haven't brought this up yet
+	test	   - Haven't brought this up yet
+	signal	   - Windows/CE is so far from having signals that this is useless
+	msvcrt	   - Windows/CE has little that this module calls
+
+-------------------------------------------------------------------------------------
+
+To Do:
+
+	Keep looking for a pipe-like object on Windows/CE that would allow us
+	to dump all the interactive stuff and be more like a console-based
+	application (but with input/output from the shell window which could
+	then be a generic facility that we add to Windows/CE python).
+
+	Add support for the following PYDs:
+		_bsddb
+		bz2
+		pyexpat
+		_ssl
+		

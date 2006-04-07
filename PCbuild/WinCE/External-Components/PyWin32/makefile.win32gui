@@ -6,8 +6,8 @@
 MODULE=win32gui
 SOURCE_DIRECTORY=$(PYWIN32ROOT)\win32\src
 SOURCE_FILE=win32guimodule_wince.cpp
-ADDITIONAL_CFLAGS= /D WIN32GUI
-LIBRARIES = binaries\$(PLATFORM_OUTDIR)\pywintypes\pywintypes$(PLATFORM_DLL_SUFFIX).lib aygshell.lib commdlg.lib commctrl.lib
+ADDITIONAL_CFLAGS= /D WIN32GUI /Zm400
+LIBRARIES = binaries\$(PLATFORM_OUTDIR)\pywintypes$(PLATFORM_DLL_SUFFIX).lib aygshell.lib commdlg.lib commctrl.lib
 ADDITIONAL_LFLAGS=/export:initwin32gui /nodefaultlib:pywintypes.lib /nodefaultlib:pywintypes_d.lib
 ADDITIONAL_OBJECTS=$(INTDIR)\win32dynamicdialog.obj
 
@@ -15,7 +15,11 @@ ADDITIONAL_OBJECTS=$(INTDIR)\win32dynamicdialog.obj
 
 $(INTDIR)\win32dynamicdialog.obj : $(SOURCE_DIRECTORY)\win32dynamicdialog.cpp $(INTDIR)
 	$(CPP) $(CPP_PROJ) $(SOURCE_DIRECTORY)\win32dynamicdialog.cpp
-$(SOURCE_DIRECTORY)\win32guimodule_wince.cpp: ..\..\PC\WinCE\PyWin32\win32gui.i
-	@copy ..\..\PC\WinCE\PyWin32\win32gui.i $(SOURCE_DIRECTORY)
+
+#$(SOURCE_DIRECTORY)\win32guimodule_wince.cpp: ..\..\PC\WinCE\PyWin32\win32gui.i
+#	@copy ..\..\PC\WinCE\PyWin32\win32gui.i $(SOURCE_DIRECTORY)
+#	$(SWIG) -c++ -o $(SOURCE_DIRECTORY)\win32guimodule_wince.cpp $(SOURCE_DIRECTORY)\win32gui.i
+
+$(SOURCE_DIRECTORY)\win32guimodule_wince.cpp: $(SOURCE_DIRECTORY)\win32gui.i
 	$(SWIG) -c++ -o $(SOURCE_DIRECTORY)\win32guimodule_wince.cpp $(SOURCE_DIRECTORY)\win32gui.i
 

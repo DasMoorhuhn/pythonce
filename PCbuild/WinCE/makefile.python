@@ -37,6 +37,9 @@ ALL : $(OUTDIR)\$(RESULT).exe
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)" mkdir "$(OUTDIR)"
 
+"$(INTDIR)" :
+    if not exist "$(INTDIR)" mkdir "$(INTDIR)"
+
 #
 #	The object files
 #
@@ -47,7 +50,7 @@ LINK32_OBJS= \
 #
 #	Link step
 #
-$(OUTDIR)\$(RESULT).exe : $(OUTDIR) $(DEF_FILE) $(LINK32_OBJS)
+$(OUTDIR)\$(RESULT).exe : $(OUTDIR) $(INTDIR) $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
   $(LFLAGS) /out:$(OUTDIR)\$(RESULT).exe /pdb:$(OUTDIR)\$(RESULT).pdb $(LINK32_OBJS)
 <<
@@ -68,3 +71,5 @@ $(INTDIR)\pocketpc.res : $(SOURCE) $(INTDIR) ..\..\PC\WinCE\pcceshell.py
 #
 CLEAN:
 	@if exist $(INTDIR) rmdir/s/q $(INTDIR)
+	@del $(OUTDIR)\$(RESULT).*
+

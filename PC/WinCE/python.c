@@ -29,7 +29,7 @@ static void (*Py_fcloseP)(FILE *);
 #define PyRun_SimpleFile (*PyRun_SimpleFileP)
 static int (*PyRun_SimpleFileP)(FILE *, const char *);
 #define	PyErr_SetString (*PyErr_SetStringP)
-static void (*PyErr_SetString)(PyObject *, const char *);
+static void (*PyErr_SetStringP)(PyObject *, const char *);
 #define PyExc_ValueError (*PyExc_ValueErrorP)
 static PyObject **PyExc_ValueErrorP;
 #define	PyObject_CallObject (*PyObject_CallObjectP)
@@ -92,7 +92,7 @@ static PyObject *(*PySys_GetObjectP)(char *);
 static void (*_WinCE_Declare_InterruptP)(void);
 #define	_SYMBOL(Name) {TEXT(#Name), (void **)&Name##P}
 static struct {TCHAR *Name; void **SymbolP;} Python_DLL_Symbols[] = {
-	_SYMBOL(PyErr_Fetch), _SYMBOL(PyExc_ValueError), _SYMBOL(PyRun_SimpleFile), _SYMBOL(Py_fopen), _SYMBOL(Py_fclose),
+	_SYMBOL(PyErr_Fetch), _SYMBOL(Py_fopen), _SYMBOL(Py_fclose), _SYMBOL(PyRun_SimpleFile), _SYMBOL(PyErr_SetString), _SYMBOL(PyExc_ValueError),
 	_SYMBOL(PyObject_CallObject), _SYMBOL(PyObject_GetAttrString), _SYMBOL(PyImport_ImportModule),
 	_SYMBOL(PySys_SetArgv), _SYMBOL(PySys_SetObject), _SYMBOL(PyInt_FromLong), _SYMBOL(Py_Initialize),
 	_SYMBOL(Py_SetProgramName), _SYMBOL(Py_InteractiveFlag),
@@ -525,9 +525,9 @@ static int Dynamically_Load_Python(void)
 	/*
 	 *	Load the python library
 	 */
-	Handle = LoadLibrary(TEXT("\\Program Files\\Python\\Lib\\") TEXT(_NAME(PYTHON_DLL_NAME)));
+	Handle = LoadLibrary(TEXT(_NAME(PYTHON_DLL_NAME)));
 	if (!Handle) {
-		Handle = LoadLibrary(TEXT(_NAME(PYTHON_DLL_NAME)));
+		Handle = LoadLibrary(TEXT("\\Program Files\\Python\\Lib\\") TEXT(_NAME(PYTHON_DLL_NAME)));
 		if (!Handle) {
 			MessageBox(0, TEXT("Couldn't open "TEXT(_NAME(PYTHON_DLL_NAME))), TEXT("ERROR"), MB_OK);
 			return(0);
@@ -945,7 +945,9 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPTSTR lpCmdLine, int nCmdS
 		/*
 		 *	Get the error information
 		 */
-		PyErr_Fetch(&Info.Type, &Info.Value, &Info.Traceback);
+		Info.Type = PySys_GetObject("last_type");
+		Info.Value = PySys_GetObject("last_value");
+		Info.Traceback = PySys_GetObject("last_traceback");
 		/*
 		 *	Put up the window
 		 */

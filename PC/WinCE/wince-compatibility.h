@@ -4,25 +4,23 @@
  *	David Kashtan, Validus Medical Systems
  */
 
-#if 0
+#if defined(Py_BUILD_CORE)
+#	define DL_IMPORT(RTYPE) __declspec(dllexport) RTYPE
+#	define DL_EXPORT(RTYPE) __declspec(dllexport) RTYPE
+#else
+#	define DL_IMPORT(RTYPE) __declspec(dllimport) RTYPE
+#	define DL_EXPORT(RTYPE) __declspec(dllexport) RTYPE
+#endif
 /*
- *	Use a local version of malloc/free/realloc
- *
- *	(Currently disabled)
- */
-#define	malloc  WinCE_malloc
-#define free    WinCE_free
-#define	realloc WinCE_realloc
-#ifdef __cplusplus
-extern "C" {
-#endif	/* __cplusplus */
-__declspec(dllexport) void *WinCE_malloc(int Size);
-__declspec(dllexport) void WinCE_free(void *Ptr);
-__declspec(dllexport) void *WinCE_realloc(void *Ptr, int Size);
-#ifdef	__cplusplus
-}
-#endif	/* __cplusplus */
-#endif	/* 0 */
+#ifndef DL_EXPORT
+#	define DL_EXPORT(RTYPE) RTYPE
+#endif
+#ifndef DL_IMPORT
+#	define DL_IMPORT(RTYPE) RTYPE
+#endif
+*/
+
+#include "time.h"
 
 /*
  *	The Windows/CE definition of fileno() is bad:
@@ -37,7 +35,7 @@ __declspec(dllexport) void *WinCE_realloc(void *Ptr, int Size);
 /*
  *	Windows/CE doesn't have rewind() so define it in terms of fseek()
  */
-#define	rewind(f)	fseek(f,0,SEEK_SET)
+#define	rewind(f)	fseek((f),0,SEEK_SET)
 
 /*
  *	Windows/CE <stdio.h> doesn't always define BUFSIZ
@@ -67,13 +65,13 @@ struct stat {
 #define S_IEXEC  0000100
 #define S_IWRITE 0000200 
 #define S_IREAD  0000400
-extern __declspec(dllexport) int stat(const char *, struct stat *);
-extern __declspec(dllexport) int _wstat(const WCHAR *, struct stat *);
+extern DL_IMPORT(int) stat(const char *, struct stat *);
+extern DL_IMPORT(int) _wstat(const WCHAR *, struct stat *);
 
 /*
  *	Windows/CE doesn't have a chdir() function -- provide a wide string one
  */
-extern __declspec(dllexport) int _wchdir(const WCHAR *);
+extern DL_IMPORT(int) _wchdir(const WCHAR *);
 
 /*
  *	Windows/CE doesn't define off_t
@@ -83,8 +81,8 @@ typedef long off_t;
 /*
  *	Windows/CE doesn't have _sys_nerr or _sys_errlist
  */
-extern __declspec(dllexport) int _sys_nerr;
-extern __declspec(dllexport) const char *_sys_errlist[];
+extern DL_IMPORT(int) _sys_nerr;
+extern DL_IMPORT(const char *) _sys_errlist[];
 
 /*
  *	Windows/CE only has the UNICODE version of OutputDebugString, so
@@ -95,41 +93,44 @@ extern __declspec(dllexport) const char *_sys_errlist[];
 #undef	OutputDebugString
 #endif	/* Output_DebugString */
 #define	OutputDebugString __WinCE_OutputDebugStringA
-extern __declspec(dllexport) void __WinCE_OutputDebugStringA(const char *);
+extern DL_IMPORT(void) __WinCE_OutputDebugStringA(const char *);
 
 /*
  *	Define a function prototype for the missing unlink() function
  */
-int __declspec(dllexport) unlink(const char *path);
+DL_IMPORT(int) unlink(const char *path);
 
 /*
  *	Define a function prototype for our getcwd() function
+ *	Now also wgetcwd()
  */
-extern __declspec(dllexport) char *getcwd(char *, int);
+DL_IMPORT(char *) getcwd(char *, int);
+DL_IMPORT(wchar_t *) wgetcwd(wchar_t *, int);
 
 /*
  *	Regardless of where fopen/fclose come from, we export them as public symbols from Python
  */
-__declspec(dllexport) FILE *Py_fopen(const char *path, const char *mode);
-__declspec(dllexport) int Py_fclose(FILE *f);
+DL_IMPORT(FILE *) Py_fopen(const char *path, const char *mode);
+DL_IMPORT(int) Py_fclose(FILE *f);
 
 /*
  *	Use local versions of fopen, _wfopen, fseek, ftell, fread, fclose and fgetc
+ *	that understand zip resources
  */
 #define fopen WinCE_fopen
-extern __declspec(dllexport) FILE *WinCE_fopen(const char *, const char *);
+extern DL_IMPORT(FILE *) WinCE_fopen(const char *, const char *);
 #define _wfopen WinCE__wfopen
-extern __declspec(dllexport) FILE *WinCE__wfopen(const WCHAR *, const WCHAR *);
+extern DL_IMPORT(FILE *) WinCE__wfopen(const WCHAR *, const WCHAR *);
 #define fseek WinCE_fseek
-extern __declspec(dllexport) int WinCE_fseek(FILE *, long, int);
+extern DL_IMPORT(int) WinCE_fseek(FILE *, long, int);
 #define ftell WinCE_ftell
-extern __declspec(dllexport) long WinCE_ftell(FILE *);
+extern DL_IMPORT(long) WinCE_ftell(FILE *);
 #define fread WinCE_fread
-extern __declspec(dllexport) size_t WinCE_fread(void *, size_t, size_t, FILE *);
+extern DL_IMPORT(size_t) WinCE_fread(void *, size_t, size_t, FILE *);
 #define fclose WinCE_fclose
-extern __declspec(dllexport) int WinCE_fclose(FILE *);
+extern DL_IMPORT(int) WinCE_fclose(FILE *);
 #define fgetc WinCE_fgetc
-extern __declspec(dllexport) int WinCE_fgetc(FILE *);
+extern DL_IMPORT(int) WinCE_fgetc(FILE *);
 
 /*
  *	Absolute filename path handling
@@ -153,7 +154,7 @@ void _WinCE_Absolute_Path_To_WCHAR(const char *Path, WCHAR *Buffer, int Buffer_S
 /*
  *	import_nt uses strnicmp -- but we will use strncmp and not get case-independence
  */
-#define	strnicmp strncmp
+/*#define	strnicmp strncmp*/
 
 /*
  *	We already pass a file handle into _get_osfhandle
@@ -163,14 +164,30 @@ void _WinCE_Absolute_Path_To_WCHAR(const char *Path, WCHAR *Buffer, int Buffer_S
 /*
  *	Dummy definitions for missing (but unnecessary) Windows/CE functions
  */
-#define	GetConsoleCP()			""
-#define	GetConsoleOutputCP()		""
 #define	SetConsoleCtrlHandler(a,b)
-#define	GetFullPathName(a,b,c,d)	(0)
+
+/*#define	GetFullPathName(a,b,c,d)	(0)*/
+
+/* Buffering is not supported */
 #define setbuf(f, p)
+
+/* TTYs are not supported */
 #define	isatty(fd)			(0)
+
+/* 
+ * These two functions are only used in sysmodule.c but will never
+ * be called because isatty() always returns false
+ */
+#define	GetConsoleCP() (0)
+#define	GetConsoleOutputCP() (0)
+
+/* Even though we #undef HAVE_SIGNAL_H, at least pythonrun.c uses this function */
 #define	signal(num, handler)		(0)
+#define SIG_ERR (-1)
+
+/* WinCE does not support environment variables */
 #define	getenv(cp)			(0)
+
 #if _WIN32_WCE <= 300
 #define	getservbyname(name, proto)	(0)
 #define	getservbyport(port, proto)	(0)
@@ -180,13 +197,13 @@ void _WinCE_Absolute_Path_To_WCHAR(const char *Path, WCHAR *Buffer, int Buffer_S
 /*
  *	Define abort() to get rid of compiler warnings
  */
-extern __declspec(dllexport) void abort(void);
+extern DL_IMPORT(void) abort(void);
 
 /*
  *	Make the character classification function call different so we
  *	can compensate for Windows/CE misclassification of EOF
  */
-extern __declspec(dllexport) int __WinCE_isctype(int, int);
+extern DL_IMPORT(int) __WinCE_isctype(int, int);
 #define	_isctype	__WinCE_isctype
 
 /*
@@ -198,25 +215,11 @@ extern unsigned char _WinCE_Positive_Double_Infinity[];
 #define	Py_HUGE_VAL (*(double *)_WinCE_Positive_Double_Infinity)
 
 /*
- *	Define missing time functions
- */
-#define	CLOCKS_PER_SEC	1000	/* Someday when clock() works we'll get back Milliseconds of CPU time */
-typedef unsigned long clock_t;
-extern __declspec(dllexport) clock_t clock(void);
-extern __declspec(dllexport) struct tm *gmtime(const time_t *);
-extern __declspec(dllexport) struct tm *localtime(const time_t *);
-extern __declspec(dllexport) time_t time(time_t *);
-extern __declspec(dllexport) char *asctime(const struct tm *);
-extern __declspec(dllexport) char *ctime(const time_t *);
-extern __declspec(dllexport) time_t mktime(struct tm *);
-extern __declspec(dllexport) size_t strftime(char *, size_t, const char *, const struct tm *);
-
-/*
  *	Define missing string functions
  */
-extern __declspec(dllexport) char *strdup(const char *);
-extern __declspec(dllexport) int strcoll(const char *, const char *);
-extern __declspec(dllexport) size_t strxfrm(char *, char *, size_t);
+#define strdup _strdup
+extern DL_IMPORT(int) strcoll(const char *, const char *);
+extern DL_IMPORT(size_t) strxfrm(char *, char *, size_t);
 #define _mbstrlen	strlen
 #define	strtol		PyOS_strtol
 
@@ -226,7 +229,7 @@ extern __declspec(dllexport) size_t strxfrm(char *, char *, size_t);
 #define	RegCreateKey(hKey, lpSubKey, phkResult) RegCreateKeyEx(hKey, lpSubKey, 0, NULL, 0, 0, NULL, phkResult, NULL)
 #define	RegQueryValue(hKey, lpSubKey, lpValue, lpcbValue) RegQueryValueEx(hKey,lpSubKey, NULL, NULL, lpValue, lpcbValue)
 #define	RegSetValue(hKey, lpSubKey, dwType, lpData, cbData) RegSetValueEx(hKey, lpSubKey, 0, dwType, lpData, cbData)
-extern __declspec(dllexport) long RegEnumKey(HKEY hKey, DWORD dwIndex, LPTSTR lpName, DWORD cchName);
+extern DL_IMPORT(long) RegEnumKey(HKEY hKey, DWORD dwIndex, LPTSTR lpName, DWORD cchName);
 
 /*
  *	Define missing Win32 functions/constants used by PyWin32

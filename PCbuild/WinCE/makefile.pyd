@@ -69,7 +69,10 @@ ALL : $(OUTDIR)\$(RESULT).pyd
 #	The output directory
 #
 $(OUTDIR):
-    if not exist $(OUTDIR) mkdir $(OUTDIR)
+	if not exist $(OUTDIR) mkdir $(OUTDIR)
+
+$(INTDIR):
+	if not exist $(INTDIR) mkdir $(INTDIR)
 
 #
 #	The object files
@@ -81,7 +84,7 @@ LINK32_OBJS = $(INTDIR)\$(OBJECT_FILE) $(ADDITIONAL_OBJECTS)
 #
 LFLAGS=/nologo /base:$(BASE) /stack:$(STACK) /dll $(LINK32_FLAGS) $(PYTHONCORE_LIB) \
 	/nodefaultlib:python$(PYTHON_VERSION).lib 
-$(OUTDIR)\$(RESULT).pyd: $(OUTDIR) $(LINK32_OBJS)
+$(OUTDIR)\$(RESULT).pyd: $(OUTDIR) $(INTDIR) $(LINK32_OBJS)
     $(LINK32) @<<
   $(LFLAGS) $(ADDITIONAL_LFLAGS) /out:$(OUTDIR)\$(RESULT).pyd /pdb:$(OUTDIR)\$(RESULT).pdb $(LINK32_OBJS) $(LIBRARIES)
 <<
@@ -97,4 +100,5 @@ $(INTDIR)\$(OBJECT_FILE) : $(SOURCE_DIRECTORY)\$(SOURCE_FILE) $(INTDIR)
 #
 CLEAN:
 	@if exist $(INTDIR) rmdir/s/q $(INTDIR)
+	@del $(OUTDIR)\$(RESULT).*
 

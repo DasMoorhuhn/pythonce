@@ -356,7 +356,7 @@ static TCHAR *TCHAR_From_String(char *String)
 	 */
 	cp = String;
 	while(*cp++) ;
-	Length = cp - String;
+	Length = cp - String + 1;
 	/*
 	 *	See if the local buffer is big enough
 	 */
@@ -726,29 +726,29 @@ PyWinObject_CloseHKEY(PyObject *obHandle)
 ** with these strings (ie only we dont!).
 */
 static void
-fixupMultiSZ(char **str, char *data, int len)
+fixupMultiSZ(TCHAR **str, TCHAR *data, int len)
 {
-	char *P;
+	TCHAR *P;
 	int i;
-	char *Q;
+	TCHAR *Q;
 
 	Q = data + len;
-	for (P = data, i = 0; P < Q && *P != '\0'; P++, i++) {
+	for (P = data, i = 0; P < Q && *P != TEXT('\0'); P++, i++) {
 		str[i] = P;
-		for(; *P != '\0'; P++)
+		for(; *P != TEXT('\0'); P++)
 			;
 	}
 }
 
 static int
-countStrings(char *data, int len)
+countStrings(const TCHAR *data, int len)
 {
 	int strings;
-	char *P;
-	char *Q = data + len;
+	const TCHAR *P;
+	const TCHAR *Q = data + len;
 
-	for (P = data, strings = 0; P < Q && *P != '\0'; P++, strings++)
-		for (; P < Q && *P != '\0'; P++)
+	for (P = data, strings = 0; P < Q && *P != TEXT('\0'); P++, strings++)
+		for (; P < Q && *P != TEXT('\0'); P++)
 			;
 	return strings;
 }
@@ -800,7 +800,7 @@ Py2Reg(PyObject *value, DWORD typ, BYTE **retDataBuf, DWORD *retDataSize)
 					PyString_AS_STRING(
 						(PyStringObject *)value));
 			}
-			*retDataBuf = (BYTE *)PyMem_NEW(DWORD, *retDataSize);
+			*retDataBuf = (BYTE *)PyMem_NEW(char, *retDataSize);
 			if (*retDataBuf==NULL){
 				PyErr_NoMemory();
 				return FALSE;
@@ -813,6 +813,20 @@ Py2Reg(PyObject *value, DWORD typ, BYTE **retDataBuf, DWORD *retDataSize)
 				       		(PyStringObject *)value));
 			if (need_decref)
 				Py_DECREF(value);
+#ifdef _UNICODE
+			/* Convert to wide characters */
+			{
+				WCHAR *wbuf = PyMem_NEW(WCHAR, *retDataSize);
+				if (wbuf == NULL) {
+					PyErr_NoMemory();
+					return FALSE;
+				}
+				MultiByteToWideChar(CP_ACP, 0, (LPCSTR)*retDataBuf, *retDataSize, wbuf, *retDataSize);
+				PyMem_DEL(*retDataBuf);
+				*retDataBuf = (BYTE *)wbuf;
+				*retDataSize *= 2;
+			}
+#endif
 			break;
 			}
 		case REG_MULTI_SZ:
@@ -876,6 +890,20 @@ Py2Reg(PyObject *value, DWORD typ, BYTE **retDataBuf, DWORD *retDataSize)
 				/* And doubly-terminate the list... */
 				*P = '\0';
 				free(obs);
+#ifdef _UNICODE
+				/* Convert to wide characters */
+				{
+					WCHAR *wbuf = PyMem_NEW(WCHAR, *retDataSize);
+					if (wbuf == NULL) {
+						PyErr_NoMemory();
+						return FALSE;
+					}
+					MultiByteToWideChar(CP_ACP, 0, (LPCSTR)*retDataBuf, *retDataSize, wbuf, *retDataSize);
+					PyMem_DEL(*retDataBuf);
+					*retDataBuf = (BYTE *)wbuf;
+					*retDataSize *= 2;
+				}
+#endif
 				break;
 			reg_multi_fail:
 				if (obs) {
@@ -916,6 +944,12 @@ Py2Reg(PyObject *value, DWORD typ, BYTE **retDataBuf, DWORD *retDataSize)
 	return TRUE;
 }
 
+#ifdef _UNICODE
+#define _tstrlen wcslen
+#else
+#define _tstrlen _mbstrlen
+#endif
+
 /* Convert Registry data into PyObject*/
 static PyObject *
 Reg2Py(char *retDataBuf, DWORD retDataSize, DWORD typ)
@@ -932,6 +966,7 @@ Reg2Py(char *retDataBuf, DWORD retDataSize, DWORD typ)
 			break;
 		case REG_SZ:
 		case REG_EXPAND_SZ:
+#ifndef _UNICODE
 			/* retDataBuf may or may not have a trailing NULL in
 			   the buffer. */
 			if (retDataSize && retDataBuf[retDataSize-1] == '\0')
@@ -941,6 +976,16 @@ Reg2Py(char *retDataBuf, DWORD retDataSize, DWORD typ)
 			obData = PyUnicode_DecodeMBCS(retDataBuf,
 						      retDataSize,
 						      NULL);
+#else
+			/* The buffer is already in unicode */
+			{
+				WCHAR *wbuf = (WCHAR *)retDataBuf;
+				DWORD numwide = retDataSize / sizeof(WCHAR);
+				if(numwide && wbuf[numwide - 1] == L'\0')
+					--numwide;
+				obData = PyUnicode_FromWideChar(wbuf, numwide);
+			}
+#endif
 			break;
 		case REG_MULTI_SZ:
 			if (retDataSize == 0)
@@ -948,18 +993,18 @@ Reg2Py(char *retDataBuf, DWORD retDataSize, DWORD typ)
 			else
 			{
 				int index = 0;
-				int s = countStrings(retDataBuf, retDataSize);
-				char **str = (char **)malloc(sizeof(char *)*s);
+				int s = countStrings((const TCHAR *)retDataBuf, retDataSize / sizeof(TCHAR));
+				TCHAR **str = (TCHAR **)malloc(sizeof(TCHAR *)*s);
 				if (str == NULL)
 					return PyErr_NoMemory();
 
-				fixupMultiSZ(str, retDataBuf, retDataSize);
+				fixupMultiSZ(str, (TCHAR *)retDataBuf, retDataSize / sizeof(TCHAR));
 				obData = PyList_New(s);
 				if (obData == NULL)
 					return NULL;
 				for (index = 0; index < s; index++)
 				{
-					size_t len = _mbstrlen(str[index]);
+					size_t len = _tstrlen(str[index]);
 					if (len > INT_MAX) {
 						PyErr_SetString(PyExc_OverflowError,
 							"registry string is too long for a Python string");
@@ -968,10 +1013,15 @@ Reg2Py(char *retDataBuf, DWORD retDataSize, DWORD typ)
 					}
 					PyList_SetItem(obData,
 						       index,
+#ifndef _UNICODE
 						       PyUnicode_DecodeMBCS(
 						            (const char *)str[index],
 							   (int)len,
 							    NULL)
+#else
+							   /* The buffer is already in unicode */
+						       PyUnicode_FromWideChar(str[index], (int)len)
+#endif
 						       );
 				}
 				free(str);
@@ -1320,7 +1370,24 @@ PyQueryValue(PyObject *self, PyObject *args)
 		return PyErr_SetFromWindowsErrWithFunction(rc,
 							   "RegQueryValue");
 	}
+#ifndef _UNICODE
 	_PyString_Resize(&retStr, strlen(retBuf));
+#else
+	/* The RegQueryValueA() returns strings as ANSI and Python programs (e.g. test_winreg.py)
+	 * rely on this, so we convert to ANSI
+	 */
+	{
+		PyObject *retStr2 = PyString_FromStringAndSize(NULL, bufSize);
+		char *retBuf2;
+		if(retStr2 == NULL)
+			return NULL;
+		retBuf2 = PyString_AS_STRING(retStr2);
+		WideCharToMultiByte(CP_ACP, 0, (WCHAR *)retBuf, -1, retBuf2, bufSize, NULL, NULL);
+		_PyString_Resize(&retStr2, strlen(retBuf2));
+		Py_DECREF(retStr);
+		retStr = retStr2;
+	}
+#endif
 	return retStr;
 }
 
@@ -1482,10 +1549,6 @@ PySetValueEx(PyObject *self, PyObject *args)
 			PyErr_SetString(PyExc_ValueError,
 				 "Could not convert the data to the specified type.");
 		return NULL;
-	}
-	if (data && ((typ == REG_SZ) || (typ == REG_EXPAND_SZ) || (typ == REG_MULTI_SZ))) {
-		data = (char *)TCHAR_From_String((char *)data);
-		len *= sizeof(TCHAR);
 	}
 	Py_BEGIN_ALLOW_THREADS
 	rc = RegSetValueEx(hKey, valueName, 0, typ, data, len);

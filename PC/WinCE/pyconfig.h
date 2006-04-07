@@ -43,32 +43,55 @@ MS_CORE_DLL.
 
 #ifdef	MS_WINCE
 #define PLATFORM "Pocket PC"
+
+#if 0   /* absolute paths are too inflexible */
 #ifndef PYTHONPATH
 #define PYTHONPATH "\\Program Files\\Python;\\Program Files\\Python\\lib;\\Storage Card\\Python;\\Storage Card\\Python\\lib"
 #endif	/* not PYTHONPATH */
+#endif
+
+/* These are documented in pyport.h */
 #define	DONT_HAVE_FSTAT			/* Windows/CE doesn't have the fstat() function */
-#define	DONT_HAVE_SIGNAL_H		/* Windows/CE doesn't have <signal.h> */
 #define	DONT_HAVE_SYS_STAT_H		/* Windows/CE doesn't have <sys/stat.h> */
+
+#if 0   /* handled by #undef HAVE_SIGNAL_H */
+#define	DONT_HAVE_SIGNAL_H		/* Windows/CE doesn't have <signal.h> */
+#endif
+
+/* This is used in a few patched places */
 #define	DONT_HAVE_SYS_TYPES_H		/* Windows/CE doesn't have <sys/types.h> */
+
 #define	HAVE_SOCKADDR_STORAGE		/* Windows/CE does have sockaddr_storage definitions */
 #define	WINCE_THREADS			/* Use Windows/CE thread code */
 #define SIZEOF_FPOS_T 4
 #include "wince-compatibility.h"	/* Include the compatibility definitions */
 #endif	/* MS_WINCE */
 
+#ifndef MS_WINCE    /* WinCE doesn't have this header */
 #include <io.h>
+#endif
+
 #define HAVE_LIMITS_H
+
+#if 0   /* Not true */
 #define HAVE_SYS_UTIME_H
-#define HAVE_HYPOT
 #define HAVE_TEMPNAM
 #define HAVE_TMPFILE
 #define HAVE_TMPNAM
+#endif
+
+#define HAVE_HYPOT  /* seems to be unused but we do have _hypot() */
+
+#if 0   /* This has no effect either way */
 #ifndef	MS_WINCE
-#define HAVE_CLOCK
+# define HAVE_CLOCK
 #endif	/* not MS_WINCE */
-#define HAVE_STRFTIME
+#endif
+
+#define HAVE_STRFTIME   /* in our custom time.h and strftime.c */
+
 #ifndef	MS_WINCE
-#define HAVE_STRERROR
+# define HAVE_STRERROR
 #endif	/* not MS_WINCE */
 #define DONT_HAVE_SIG_ALARM
 #define DONT_HAVE_SIG_PAUSE
@@ -79,16 +102,26 @@ MS_CORE_DLL.
 
 #define MS_WIN32 /* only support win32 and greater. */
 #define MS_WINDOWS
-#ifndef MS_WINCE
+
 #ifndef PYTHONPATH
 #	define PYTHONPATH ".\\DLLs;.\\lib;.\\lib\\plat-win;.\\lib\\lib-tk"
 #endif	/* not PYTHONPATH */
+
+#ifndef MS_WINCE
 #define NT_THREADS
-#endif	/* not MS_WINCE */
+#endif
+
 #define WITH_THREAD
+
 #ifndef NETSCAPE_PI
 #define USE_SOCKET
 #endif
+
+/*
+ * Helps to prevent stack overflows. We could instead increase the default
+ * stack size but I would rather save some memory.
+ */
+#define DEFAULT_RECURSION_LIMIT 500
 
 /* Compiler specific defines */
 
@@ -253,9 +286,9 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
 			their Makefile (other compilers are generally
 			taken care of by distutils.) */
 #			ifdef _DEBUG
-#				pragma comment(lib,"python23_d.lib")
+#				pragma comment(lib,"python24_d.lib")
 #			else
-#				pragma comment(lib,"python23.lib")
+#				pragma comment(lib,"python24.lib")
 #			endif /* _DEBUG */
 #		endif /* _MSC_VER */
 #	endif /* Py_BUILD_CORE */
@@ -400,7 +433,7 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
 /* #define HAVE_ALTZONE */
 
 /* Define if you have the putenv function.  */
-#define HAVE_PUTENV
+/*#define HAVE_PUTENV*/
 
 /* Define if your compiler supports function prototypes */
 #define HAVE_PROTOTYPES
@@ -477,8 +510,8 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
 /* Define if you have getpgrp.  */
 /* #undef HAVE_GETPGRP */
 
-/* Define if you have getpid.  */
-#define HAVE_GETPID
+/* Unused */
+/*#define HAVE_GETPID*/
 
 /* Define if you have gettimeofday.  */
 /* #undef HAVE_GETTIMEOFDAY */
@@ -604,14 +637,14 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
 /* Define if you have the mpc library (-lmpc).  */
 /* #undef HAVE_LIBMPC */
 
-/* Define if you have the nsl library (-lnsl).  */
-#define HAVE_LIBNSL 1
+/* Unused */
+/*#define HAVE_LIBNSL 1*/
 
 /* Define if you have the seq library (-lseq).  */
 /* #undef HAVE_LIBSEQ */
 
-/* Define if you have the socket library (-lsocket).  */
-#define HAVE_LIBSOCKET 1
+/* Unused */
+/*#define HAVE_LIBSOCKET 1*/
 
 /* Define if you have the sun library (-lsun).  */
 /* #undef HAVE_LIBSUN */
@@ -624,4 +657,9 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
 
 /* Define if you have the thread library (-lthread).  */
 /* #undef HAVE_LIBTHREAD */
+
+/* WinSock does not use a bitmask in select, and uses
+   socket handles greater than FD_SETSIZE */
+#define Py_SOCKET_FD_CAN_BE_GE_FD_SETSIZE
+
 #endif /* !Py_CONFIG_H */

@@ -3,17 +3,13 @@
 
 #include "Python.h"
 #include "structseq.h"
+#include "timefuncs.h"
 
 #include <ctype.h>
 
-#ifdef macintosh
-#include <time.h>
-#include <OSUtils.h>
-#else
 #ifndef	DONT_HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif	/* not DONT_HAVE_SYS_TYPES_H */
-#endif
 
 #ifdef QUICKWIN
 #include <io.h>
@@ -91,36 +87,31 @@ static double floattime(void);
 /* For Y2K check */
 static PyObject *moddict;
 
-#ifdef macintosh
-/* Our own timezone. We have enough information to deduce whether
-** DST is on currently, but unfortunately we cannot put it to good
-** use because we don't know the rules (and that is needed to have
-** localtime() return correct tm_isdst values for times other than
-** the current time. So, we cop out and only tell the user the current
-** timezone.
-*/
-static long timezone;
-
-static void
-initmactimezone(void)
+/* Exposed in timefuncs.h. */
+time_t
+_PyTime_DoubleToTimet(double x)
 {
-	MachineLocation	loc;
-	long		delta;
+	time_t result;
+	double diff;
 
-	ReadLocation(&loc);
-
-	if (loc.latitude == 0 && loc.longitude == 0 && loc.u.gmtDelta == 0)
-		return;
-
-	delta = loc.u.gmtDelta & 0x00FFFFFF;
-
-	if (delta & 0x00800000)
-		delta |= 0xFF000000;
-
-	timezone = -delta;
+	result = (time_t)x;
+	/* How much info did we lose?  time_t may be an integral or
+	 * floating type, and we don't know which.  If it's integral,
+	 * we don't know whether C truncates, rounds, returns the floor,
+	 * etc.  If we lost a second or more, the C rounding is
+	 * unreasonable, or the input just doesn't fit in a time_t;
+	 * call it an error regardless.  Note that the original cast to
+	 * time_t can cause a C error too, but nothing we can do to
+	 * worm around that.
+	 */
+	diff = x - (double)result;
+	if (diff <= -1.0 || diff >= 1.0) {
+		PyErr_SetString(PyExc_ValueError,
+		                "timestamp out of range for platform time_t");
+		result = (time_t)-1;
+	}
+	return result;
 }
-#endif /* macintosh */
-
 
 static PyObject *
 time_time(PyObject *self, PyObject *args)
@@ -269,11 +260,15 @@ tmtotuple(struct tm *p)
 }
 
 static PyObject *
-time_convert(time_t when, struct tm * (*function)(const time_t *))
+time_convert(double when, struct tm * (*function)(const time_t *))
 {
 	struct tm *p;
+	time_t whent = _PyTime_DoubleToTimet(when);
+
+	if (whent == (time_t)-1 && PyErr_Occurred())
+		return NULL;
 	errno = 0;
-	p = function(&when);
+	p = function(&whent);
 	if (p == NULL) {
 #ifdef EINVAL
 		if (errno == 0)
@@ -284,15 +279,35 @@ time_convert(time_t when, struct tm * (*function)(const time_t *))
 	return tmtotuple(p);
 }
 
+/* Parse arg tuple that can contain an optional float-or-None value;
+   format needs to be "|O:name".
+   Returns non-zero on success (parallels PyArg_ParseTuple).
+*/
+static int
+parse_time_double_args(PyObject *args, char *format, double *pwhen)
+{
+	PyObject *ot = NULL;
+
+	if (!PyArg_ParseTuple(args, format, &ot))
+		return 0;
+	if (ot == NULL || ot == Py_None)
+		*pwhen = floattime();
+	else {
+		double when = PyFloat_AsDouble(ot);
+		if (PyErr_Occurred())
+			return 0;
+		*pwhen = when;
+	}
+	return 1;
+}
+
 static PyObject *
 time_gmtime(PyObject *self, PyObject *args)
 {
 	double when;
-	if (PyTuple_Size(args) == 0)
-		when = floattime();
-	if (!PyArg_ParseTuple(args, "|d:gmtime", &when))
+	if (!parse_time_double_args(args, "|O:gmtime", &when))
 		return NULL;
-	return time_convert((time_t)when, gmtime);
+	return time_convert(when, gmtime);
 }
 
 PyDoc_STRVAR(gmtime_doc,
@@ -306,11 +321,9 @@ static PyObject *
 time_localtime(PyObject *self, PyObject *args)
 {
 	double when;
-	if (PyTuple_Size(args) == 0)
-		when = floattime();
-	if (!PyArg_ParseTuple(args, "|d:localtime", &when))
+	if (!parse_time_double_args(args, "|O:localtime", &when))
 		return NULL;
-	return time_convert((time_t)when, localtime);
+	return time_convert(when, localtime);
 }
 
 PyDoc_STRVAR(localtime_doc,
@@ -383,6 +396,48 @@ time_strftime(PyObject *self, PyObject *args)
 		buf = *localtime(&tt);
 	} else if (!gettmarg(tup, &buf))
 		return NULL;
+
+        /* Checks added to make sure strftime() does not crash Python by
+            indexing blindly into some array for a textual representation
+            by some bad index (fixes bug #897625).
+
+            No check for year since handled in gettmarg().
+        */
+        if (buf.tm_mon < 0 || buf.tm_mon > 11) {
+            PyErr_SetString(PyExc_ValueError, "month out of range");
+                        return NULL;
+        }
+        if (buf.tm_mday < 1 || buf.tm_mday > 31) {
+            PyErr_SetString(PyExc_ValueError, "day of month out of range");
+                        return NULL;
+        }
+        if (buf.tm_hour < 0 || buf.tm_hour > 23) {
+            PyErr_SetString(PyExc_ValueError, "hour out of range");
+            return NULL;
+        }
+        if (buf.tm_min < 0 || buf.tm_min > 59) {
+            PyErr_SetString(PyExc_ValueError, "minute out of range");
+            return NULL;
+        }
+        if (buf.tm_sec < 0 || buf.tm_sec > 61) {
+            PyErr_SetString(PyExc_ValueError, "seconds out of range");
+            return NULL;
+        }
+        /* tm_wday does not need checking of its upper-bound since taking
+        ``% 7`` in gettmarg() automatically restricts the range. */
+        if (buf.tm_wday < 0) {
+            PyErr_SetString(PyExc_ValueError, "day of week out of range");
+            return NULL;
+        }
+        if (buf.tm_yday < 0 || buf.tm_yday > 365) {
+            PyErr_SetString(PyExc_ValueError, "day of year out of range");
+            return NULL;
+        }
+        if (buf.tm_isdst < -1 || buf.tm_isdst > 1) {
+            PyErr_SetString(PyExc_ValueError,
+                            "daylight savings flag out of range");
+            return NULL;
+        }
 
 	fmtlen = strlen(fmt);
 
@@ -467,16 +522,21 @@ is used.");
 static PyObject *
 time_ctime(PyObject *self, PyObject *args)
 {
-	double dt;
+	PyObject *ot = NULL;
 	time_t tt;
 	char *p;
 
-	if (PyTuple_Size(args) == 0)
+	if (!PyArg_ParseTuple(args, "|O:ctime", &ot))
+		return NULL;
+	if (ot == NULL || ot == Py_None)
 		tt = time(NULL);
 	else {
-		if (!PyArg_ParseTuple(args, "|d:ctime", &dt))
+		double dt = PyFloat_AsDouble(ot);
+		if (PyErr_Occurred())
 			return NULL;
-		tt = (time_t)dt;
+		tt = _PyTime_DoubleToTimet(dt);
+		if (tt == (time_t)-1 && PyErr_Occurred())
+			return NULL;
 	}
 	p = ctime(&tt);
 	if (p == NULL) {
@@ -544,7 +604,7 @@ time_tzset(PyObject *self, PyObject *args)
 	/* Reset timezone, altzone, daylight and tzname */
 	inittimezone(m);
 	Py_DECREF(m);
-	
+
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -554,7 +614,7 @@ PyDoc_STRVAR(tzset_doc,
 \n\
 Initialize, or reinitialize, the local timezone to the value stored in\n\
 os.environ['TZ']. The TZ environment variable should be specified in\n\
-standard Uniz timezone format as documented in the tzset man page\n\
+standard Unix timezone format as documented in the tzset man page\n\
 (eg. 'US/Eastern', 'Europe/Amsterdam'). Unknown timezones will silently\n\
 fall back to UTC. If the TZ environment variable is not set, the local\n\
 timezone is set to the systems best guess of wallclock time.\n\
@@ -638,17 +698,6 @@ void inittimezone(PyObject *m) {
 		}
 	}
 #else
-#ifdef macintosh
-	/* The only thing we can obtain is the current timezone
-	** (and whether dst is currently _active_, but that is not what
-	** we're looking for:-( )
-	*/
-	initmactimezone();
-	PyModule_AddIntConstant(m, "timezone", timezone);
-	PyModule_AddIntConstant(m, "altzone", timezone);
-	PyModule_AddIntConstant(m, "daylight", 0);
-	PyModule_AddObject(m, "tzname", Py_BuildValue("(zz)", "", ""));
-#endif /* macintosh */
 #endif /* HAVE_STRUCT_TM_TM_ZONE */
 #ifdef __CYGWIN__
 	tzset();
@@ -831,15 +880,6 @@ floatsleep(double secs)
 		}
 	}
 	Py_END_ALLOW_THREADS
-#elif defined(macintosh)
-#define MacTicks	(* (long *)0x16A)
-	long deadline;
-	deadline = MacTicks + (long)(secs * 60.0);
-	while (MacTicks < deadline) {
-		/* XXX Should call some yielding function here */
-		if (PyErr_CheckSignals())
-			return -1;
-	}
 #elif defined(__WATCOMC__) && !defined(__QNX__)
 	/* XXX Can't interrupt this sleep */
 	Py_BEGIN_ALLOW_THREADS

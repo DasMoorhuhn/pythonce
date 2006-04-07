@@ -2,6 +2,7 @@
 #	Setup the registry to allow us to double click on python scripts
 #
 from _winreg import *
+import sys
 
 print "Setting up registry to allow\ndouble clicking of Python files to work"
 
@@ -21,7 +22,7 @@ for Name in ("Shell","Open","Command"):
   New_Key= CreateKey(Key, Name)
   CloseKey(Key)
   Key = New_Key
-SetValue(Key, None, REG_SZ, "\"\\Program Files\\Python\\Lib\\Python.exe\" \"%1\"")
+SetValue(Key, None, REG_SZ, '"' + sys.executable + '" "%1"')
 CloseKey(Key)
 
 import time

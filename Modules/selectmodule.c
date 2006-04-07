@@ -78,22 +78,29 @@ reap_obj(pylist fd2obj[FD_SETSIZE + 1])
    returns a number >= 0
 */
 static int
-list2set(PyObject *list, fd_set *set, pylist fd2obj[FD_SETSIZE + 1])
+seq2set(PyObject *seq, fd_set *set, pylist fd2obj[FD_SETSIZE + 1])
 {
 	int i;
 	int max = -1;
 	int index = 0;
-	int len = PyList_Size(list);
+        int len = -1;
+        PyObject* fast_seq = NULL;
 	PyObject* o = NULL;
 
 	fd2obj[0].obj = (PyObject*)0;	     /* set list to zero size */
 	FD_ZERO(set);
 
+        fast_seq=PySequence_Fast(seq, "arguments 1-3 must be sequences");
+        if (!fast_seq)
+            return -1;
+
+        len = PySequence_Fast_GET_SIZE(fast_seq);
+
 	for (i = 0; i < len; i++)  {
 		SOCKET v;
 
 		/* any intervening fileno() calls could decr this refcnt */
-		if (!(o = PyList_GetItem(list, i)))
+		if (!(o = PySequence_Fast_GET_ITEM(fast_seq, i)))
                     return -1;
 
 		Py_INCREF(o);
@@ -124,10 +131,12 @@ list2set(PyObject *list, fd_set *set, pylist fd2obj[FD_SETSIZE + 1])
 		fd2obj[index].sentinel = 0;
 		fd2obj[++index].sentinel = -1;
 	}
+        Py_DECREF(fast_seq);
 	return max+1;
 
   finally:
 	Py_XDECREF(o);
+        Py_DECREF(fast_seq);
 	return -1;
 }
 
@@ -232,15 +241,6 @@ select_select(PyObject *self, PyObject *args)
 		tvp = &tv;
 	}
 
-	/* sanity check first three arguments */
-	if (!PyList_Check(ifdlist) ||
-	    !PyList_Check(ofdlist) ||
-	    !PyList_Check(efdlist))
-	{
-		PyErr_SetString(PyExc_TypeError,
-				"arguments 1-3 must be lists");
-		return NULL;
-	}
 
 #ifdef SELECT_USES_HEAP
 	/* Allocate memory for the lists */
@@ -254,17 +254,17 @@ select_select(PyObject *self, PyObject *args)
 		return PyErr_NoMemory();
 	}
 #endif /* SELECT_USES_HEAP */
-	/* Convert lists to fd_sets, and get maximum fd number
-	 * propagates the Python exception set in list2set()
+	/* Convert sequences to fd_sets, and get maximum fd number
+	 * propagates the Python exception set in seq2set()
 	 */
 	rfd2obj[0].sentinel = -1;
 	wfd2obj[0].sentinel = -1;
 	efd2obj[0].sentinel = -1;
-	if ((imax=list2set(ifdlist, &ifdset, rfd2obj)) < 0) 
+	if ((imax=seq2set(ifdlist, &ifdset, rfd2obj)) < 0) 
 		goto finally;
-	if ((omax=list2set(ofdlist, &ofdset, wfd2obj)) < 0) 
+	if ((omax=seq2set(ofdlist, &ofdset, wfd2obj)) < 0) 
 		goto finally;
-	if ((emax=list2set(efdlist, &efdset, efd2obj)) < 0) 
+	if ((emax=seq2set(efdlist, &efdset, efd2obj)) < 0) 
 		goto finally;
 	max = imax;
 	if (omax > max) max = omax;
@@ -287,7 +287,7 @@ select_select(PyObject *self, PyObject *args)
                 /* optimization */
 		ifdlist = PyList_New(0);
 		if (ifdlist) {
-			ret = Py_BuildValue("OOO", ifdlist, ifdlist, ifdlist);
+			ret = PyTuple_Pack(3, ifdlist, ifdlist, ifdlist);
 			Py_DECREF(ifdlist);
 		}
 	}
@@ -302,7 +302,7 @@ select_select(PyObject *self, PyObject *args)
 		if (PyErr_Occurred())
 			ret = NULL;
 		else
-			ret = Py_BuildValue("OOO", ifdlist, ofdlist, efdlist);
+			ret = PyTuple_Pack(3, ifdlist, ofdlist, efdlist);
 
 		Py_DECREF(ifdlist);
 		Py_DECREF(ofdlist);
@@ -473,6 +473,8 @@ poll_poll(pollObject *self, PyObject *args)
 			return NULL;
 		timeout = PyInt_AsLong(tout);
 		Py_DECREF(tout);
+		if (timeout == -1 && PyErr_Occurred())
+			return NULL;
 	}
 
 	/* Ensure the ufd array is up to date */
@@ -514,7 +516,11 @@ poll_poll(pollObject *self, PyObject *args)
 			}
 			PyTuple_SET_ITEM(value, 0, num);
 
-			num = PyInt_FromLong(self->ufds[i].revents);
+			/* The &0xffff is a workaround for AIX.  'revents'
+			   is a 16-bit short, and IBM assigned POLLNVAL
+			   to be 0x8000, so the conversion to int results
+			   in a negative number. See SF bug #923315. */
+			num = PyInt_FromLong(self->ufds[i].revents & 0xffff);
 			if (num == NULL) {
 				Py_DECREF(value);
 				goto error;
@@ -621,7 +627,7 @@ PyDoc_STRVAR(select_doc,
 "select(rlist, wlist, xlist[, timeout]) -> (rlist, wlist, xlist)\n\
 \n\
 Wait until one or more file descriptors are ready for some kind of I/O.\n\
-The first three arguments are lists of file descriptors to be waited for:\n\
+The first three arguments are sequences of file descriptors to be waited for:\n\
 rlist -- wait until ready for reading\n\
 wlist -- wait until ready for writing\n\
 xlist -- wait for an ``exceptional condition''\n\

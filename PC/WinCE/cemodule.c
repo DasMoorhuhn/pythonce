@@ -156,10 +156,14 @@ static PyObject *OS_mkdir(PyObject *Self, PyObject *Args)
 	 */
 	if (!Result) {
 		errno = GetLastError();
+        /* This check was removed because it is incompatible with WinNT mkdir() and breaks test.test_os
 		if (errno != ERROR_ALREADY_EXISTS) {
 			PyErr_SetFromErrnoWithFilenameObject(PyExc_OSError, Path);
 			return(NULL);
 		}
+        */
+        PyErr_SetFromErrnoWithFilenameObject(PyExc_OSError, Path);
+        return(NULL);
 	}
 	/*
 	 *	Return success
@@ -684,6 +688,17 @@ static PyObject *OS_getcwd(PyObject *Self, PyObject *Args)
 }
 	
 /*
+ *	OS-dependent getcwdu() function
+ */
+static PyObject *OS_getcwdu(PyObject *Self, PyObject *Args)
+{
+	wchar_t Buffer[MAX_PATH + 1];
+
+	wgetcwd(Buffer, sizeof(Buffer));
+	return(PyUnicode_FromUnicode(Buffer, wcslen(Buffer)));
+}
+	
+/*
  *	OS-Dependent chmod() function
  */
 static PyObject *OS_chmod(PyObject *Self, PyObject *Args)
@@ -691,12 +706,36 @@ static PyObject *OS_chmod(PyObject *Self, PyObject *Args)
 	PyObject *Path;
 	int Mode;
 	WCHAR Wide_Path[MAX_PATH + 1];
+    DWORD attr, newattr;
 
 	/*
 	 *	Parse the args
 	 */
 	if(!PyArg_ParseTuple(Args, "Oi:chmod", &Path, &Mode)) return(NULL);
 	if (!_WinCE_Absolute_Path(Path, Wide_Path, MAX_PATH + 1)) return(NULL);
+    /* Update the read-only flag */
+    attr = GetFileAttributes(Wide_Path);
+    if(attr == 0xFFFFFFFF)
+    {
+		errno = GetLastError();
+		PyErr_SetFromErrnoWithFilenameObject(PyExc_OSError, Path);
+        return NULL;
+    }
+    newattr = attr;
+    if((Mode & 0222) == 0)
+        newattr |= FILE_ATTRIBUTE_READONLY;
+    else
+        newattr &= ~FILE_ATTRIBUTE_READONLY;
+    /* NOTE: setting a RAM file to read-only succeeds but has no effect */
+    if(newattr != attr)
+    {
+        if(!SetFileAttributes(Wide_Path, newattr))
+        {
+            errno = GetLastError();
+            PyErr_SetFromErrnoWithFilenameObject(PyExc_OSError, Path);
+            return NULL;
+        }
+    }
 	/*
 	 *	Return success
 	 */
@@ -727,6 +766,38 @@ static PyObject *OS_chdir(PyObject *Self, PyObject *Args)
 	return(Py_None);
 }
 
+#define F_OK 00
+#define W_OK 02
+#define R_OK 04
+
+/*
+ *	OS-Dependent access() function
+ */
+static PyObject *OS_access(PyObject *Self, PyObject *Args)
+{
+	PyObject *Path;
+	int Mode;
+	WCHAR Wide_Path[MAX_PATH + 1];
+    DWORD attr;
+
+	/*
+	 *	Parse the args
+	 */
+	if(!PyArg_ParseTuple(Args, "Oi:access", &Path, &Mode)) return(NULL);
+	if (!_WinCE_Absolute_Path(Path, Wide_Path, MAX_PATH + 1)) return(NULL);
+
+	Py_BEGIN_ALLOW_THREADS
+    attr = GetFileAttributes(Wide_Path);
+	Py_END_ALLOW_THREADS
+    if(attr == 0xFFFFFFFF)
+        return PyBool_FromLong(0);
+    if((Mode & W_OK) != 0 && (attr & FILE_ATTRIBUTE_READONLY) != 0)
+        return PyBool_FromLong(0);  /* not writable */
+    if((Mode & R_OK) != 0 && (attr & FILE_ATTRIBUTE_ROMMODULE) != 0)
+        return PyBool_FromLong(0);  /* ROM modules are not readable */
+    return PyBool_FromLong(1);  /* else it is readable and writable */
+}
+
 /*
  *	Exported Python methods
  */
@@ -747,8 +818,10 @@ static PyMethodDef OS_Methods[]=
 	{"write",   OS_write,	METH_VARARGS},
 	{"close",   OS_close,	METH_VARARGS},
 	{"getcwd",  OS_getcwd,	METH_NOARGS},
+	{"getcwdu", OS_getcwdu,	METH_NOARGS},
 	{"chmod",   OS_chmod,	METH_VARARGS},
 	{"chdir",   OS_chdir,	METH_VARARGS},
+	{"access",  OS_access,	METH_VARARGS},
 	{NULL, NULL}};
 
 /*
@@ -764,7 +837,11 @@ void initce(void)
 		{"O_RDWR",	O_RDWR},
 		{"O_TRUNC",	O_TRUNC},
 		{"O_EXCL",	O_EXCL},
-		{"O_CREAT",	O_CREAT}};
+		{"O_CREAT",	O_CREAT},
+        {"F_OK", F_OK},
+        {"R_OK", R_OK},
+        {"W_OK", W_OK},
+    };
 
 	/*
 	 *	Initialize the module

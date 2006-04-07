@@ -3,12 +3,6 @@
 
 #include "Python.h"
 
-#ifdef macintosh
-extern char *PyMac_StrError(int);
-#undef strerror
-#define strerror PyMac_StrError
-#endif /* macintosh */
-
 #ifndef __STDC__
 #ifndef MS_WINDOWS
 extern char *strerror(int);
@@ -159,13 +153,13 @@ PyErr_NormalizeException(PyObject **exc, PyObject **val, PyObject **tb)
 			PyObject *args, *res;
 
 			if (value == Py_None)
-				args = Py_BuildValue("()");
+				args = PyTuple_New(0);
 			else if (PyTuple_Check(value)) {
 				Py_INCREF(value);
 				args = value;
 			}
 			else
-				args = Py_BuildValue("(O)", value);
+				args = PyTuple_Pack(1, value);
 
 			if (args == NULL)
 				goto finally;
@@ -211,7 +205,7 @@ finally:
 void
 PyErr_Fetch(PyObject **p_type, PyObject **p_value, PyObject **p_traceback)
 {
-	PyThreadState *tstate = PyThreadState_Get();
+	PyThreadState *tstate = PyThreadState_GET();
 
 	*p_type = tstate->curexc_type;
 	*p_value = tstate->curexc_value;
@@ -401,6 +395,10 @@ PyObject *PyErr_SetExcFromWindowsErrWithFilenameObject(
 		s = s_small_buf;
 		s_buf = NULL;
 	} else {
+#ifdef	UNICODE
+		/* Convert to char */
+		WideCharToMultiByte(CP_ACP, 0, (TCHAR *)s_buf, -1, s_buf, len + 1, NULL, NULL);
+#endif	/* UNICODE */
 		s = s_buf;
 		/* remove trailing cr/lf and dots */
 		while (len > 0 && (s[len-1] <= ' ' || s[len-1] == '.'))
@@ -564,7 +562,7 @@ PyErr_NewException(char *name, PyObject *base, PyObject *dict)
 	classname = PyString_FromString(dot+1);
 	if (classname == NULL)
 		goto failure;
-	bases = Py_BuildValue("(O)", base);
+	bases = PyTuple_Pack(1, base);
 	if (bases == NULL)
 		goto failure;
 	result = PyClass_New(bases, dict, classname);
@@ -603,7 +601,7 @@ PyErr_WriteUnraisable(PyObject *obj)
 	Py_XDECREF(tb);
 }
 
-extern PyObject *PyModule_GetWarningsModule();
+extern PyObject *PyModule_GetWarningsModule(void);
 
 /* Function to issue a warning message; may raise an exception. */
 int

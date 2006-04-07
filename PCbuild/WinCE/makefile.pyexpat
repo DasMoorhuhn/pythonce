@@ -1,0 +1,26 @@
+#
+#	Build the expat.pyd DLL
+#
+
+MODULE=pyexpat
+LIBEXPAT=$(INTDIR)\expat.lib
+LIBEXPAT_OBJECTS=$(INTDIR)\xmlparse.obj $(INTDIR)\xmlrole.obj $(INTDIR)\xmltok.obj
+LIBRARIES=
+ADDITIONAL_CFLAGS=-DCOMPILED_FROM_DSP -DXML_STATIC -I$(SOURCE_DIRECTORY)\expat
+ADDITIONAL_LFLAGS=
+ADDITIONAL_OBJECTS=$(LIBEXPAT)
+
+!INCLUDE makefile.pyd
+
+$(INTDIR)\xmlparse.obj : $(SOURCE_DIRECTORY)\expat\xmlparse.c $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE_DIRECTORY)\expat\xmlparse.c
+
+$(INTDIR)\xmlrole.obj : $(SOURCE_DIRECTORY)\expat\xmlrole.c $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE_DIRECTORY)\expat\xmlrole.c
+
+$(INTDIR)\xmltok.obj : $(SOURCE_DIRECTORY)\expat\xmltok.c $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE_DIRECTORY)\expat\xmltok.c
+
+$(LIBEXPAT) : $(LIBEXPAT_OBJECTS)
+	lib -out:$(LIBEXPAT) $(LIBEXPAT_OBJECTS)
+

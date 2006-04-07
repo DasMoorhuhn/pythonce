@@ -10,4 +10,4 @@
 //
 //	Add the ZIP library with the minimal python library modules
 //
-PYTHON23.ZIP   PYTHONZIP  DISCARDABLE  "binaries\\lib\\minimal-python23.zip"
+PYTHON24.ZIP   PYTHONZIP  DISCARDABLE  "binaries\\lib\\minimal-python24.zip"

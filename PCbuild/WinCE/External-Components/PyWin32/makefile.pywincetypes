@@ -1,0 +1,70 @@
+#
+#	Build the pywincetypes DLL
+#
+
+#
+#	What we are building is pywincetypes
+#
+BUILD=pywincetypes
+
+#
+#	The result for pywincetypes
+#
+RESULT=pywincetypes
+
+#
+#	Include the common stuff
+#
+!INCLUDE common.mk
+
+#
+#	Add definitions for pywincetypes
+#
+CFLAGS = $(CFLAGS) /D BUILD_PYWINCETYPES
+
+#
+#	The target
+#
+ALL : $(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll
+
+#
+#	The output directory
+#
+$(OUTDIR):
+	if not exist $(OUTDIR) mkdir $(OUTDIR)
+
+$(INTDIR):
+	if not exist $(INTDIR) mkdir $(INTDIR)
+
+#
+#	The object files
+#
+LINK32_OBJS= \
+	$(INTDIR)\pywincetypesmodule.obj
+
+#
+#	The link step
+#
+LFLAGS=/nologo /base:0x1e600000 /stack:0x10000,0x1000 /dll /entry:"_DllMainCRTStartup" \
+	$(LINK32_FLAGS) oleaut32.lib $(PYTHONCORE_LIB) /nodefaultlib:python$(PYTHON_VERSION).lib \
+	/implib:$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).lib
+
+$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll: $(OUTDIR) $(INTDIR) $(LINK32_OBJS)
+	$(LINK32) @<<
+  $(LFLAGS) /out:$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll /pdb:$(OUTDIR)\$(RESULT).pdb $(LINK32_OBJS)
+<<
+
+#
+#	Source->Object dependencies
+#
+SOURCE=$(PYWIN32ROOT)\win32\src\pywincetypesmodule.cpp
+$(INTDIR)\pywincetypesmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+#
+#	Cleanup
+#
+CLEAN:
+	@if exist $(INTDIR) rmdir/s/q $(INTDIR)
+	@del $(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).*
+

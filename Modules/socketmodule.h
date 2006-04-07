@@ -35,6 +35,17 @@
 # undef AF_UNIX
 #endif
 
+#ifdef HAVE_BLUETOOTH_BLUETOOTH_H
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/rfcomm.h>
+#include <bluetooth/l2cap.h>
+#include <bluetooth/sco.h>
+#endif
+
+#ifdef HAVE_BLUETOOTH_H
+#include <bluetooth.h>
+#endif
+
 #ifdef HAVE_NETPACKET_PACKET_H
 # include <sys/ioctl.h>
 # include <net/if.h>
@@ -64,6 +75,26 @@ typedef int SOCKET_T;
 #	define SIZEOF_SOCKET_T SIZEOF_INT
 #endif
 
+/* Socket address */
+typedef union sock_addr {
+	struct sockaddr_in in;
+#ifdef AF_UNIX
+	struct sockaddr_un un;
+#endif
+#ifdef ENABLE_IPV6
+	struct sockaddr_in6 in6;
+	struct sockaddr_storage storage;
+#endif
+#ifdef HAVE_BLUETOOTH_BLUETOOTH_H
+	struct sockaddr_l2 bt_l2;
+	struct sockaddr_rc bt_rc;
+	struct sockaddr_sco bt_sco;
+#endif
+#ifdef HAVE_NETPACKET_PACKET_H
+	struct sockaddr_ll ll;
+#endif
+} sock_addr_t;
+
 /* The object holding a socket.  It holds some extra information,
    like the address family, which is used to decode socket address
    arguments properly. */
@@ -74,19 +105,7 @@ typedef struct {
 	int sock_family;	/* Address family, e.g., AF_INET */
 	int sock_type;		/* Socket type, e.g., SOCK_STREAM */
 	int sock_proto;		/* Protocol type, usually 0 */
-	union sock_addr {
-		struct sockaddr_in in;
-#ifdef AF_UNIX
-		struct sockaddr_un un;
-#endif
-#ifdef ENABLE_IPV6
-		struct sockaddr_in6 in6;
-		struct sockaddr_storage storage;
-#endif
-#ifdef HAVE_NETPACKET_PACKET_H
-		struct sockaddr_ll ll;
-#endif
-	} sock_addr;
+	sock_addr_t sock_addr;	/* Socket address */
 	PyObject *(*errorhandler)(void); /* Error handler; checks
 					    errno, returns NULL and
 					    sets a Python exception */
@@ -147,6 +166,7 @@ typedef struct {
 /* C API for usage by other Python modules */
 typedef struct {
 	PyTypeObject *Sock_Type;
+        PyObject *error;
 } PySocketModule_APIObject;
 
 /* XXX The net effect of the following appears to be to define a function

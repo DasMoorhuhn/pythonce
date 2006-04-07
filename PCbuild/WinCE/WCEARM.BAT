@@ -39,3 +39,6 @@ set CFG=ARMREL
 
 set CEVERSION=420
 set CESUBSYSTEM=windowsce,4.20
+
+set PYTHONROOT=c:\python24
+

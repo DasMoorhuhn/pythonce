@@ -40,7 +40,10 @@ ALL : $(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll
 #	The output directory
 #
 $(OUTDIR):
-    if not exist $(OUTDIR) mkdir $(OUTDIR)
+	if not exist $(OUTDIR) mkdir $(OUTDIR)
+
+$(INTDIR):
+	if not exist $(INTDIR) mkdir $(INTDIR)
 
 #
 #	The object files
@@ -64,17 +67,13 @@ LIBRARY_OBJS= \
 	$(INTDIR)\md5c.obj \
 	$(INTDIR)\md5module.obj \
 	$(INTDIR)\operator.obj \
-	$(INTDIR)\pcremodule.obj \
-	$(INTDIR)\pypcre.obj \
 	$(INTDIR)\regexmodule.obj \
 	$(INTDIR)\regexpr.obj \
 	$(INTDIR)\rgbimgmodule.obj \
-	$(INTDIR)\rotormodule.obj \
 	$(INTDIR)\shamodule.obj \
 	$(INTDIR)\stropmodule.obj \
 	$(INTDIR)\structmodule.obj \
 	$(INTDIR)\threadmodule.obj \
-	$(INTDIR)\xreadlinesmodule.obj \
 	$(INTDIR)\xxsubtype.obj \
 	$(INTDIR)\yuvconvert.obj \
 	$(INTDIR)\abstract.obj \
@@ -108,6 +107,8 @@ LIBRARY_OBJS= \
 	$(INTDIR)\unicodectype.obj \
 	$(INTDIR)\unicodeobject.obj \
 	$(INTDIR)\weakrefobject.obj \
+	$(INTDIR)\genobject.obj \
+	$(INTDIR)\setobject.obj \
 	$(INTDIR)\acceler.obj \
 	$(INTDIR)\bitset.obj \
 	$(INTDIR)\grammar1.obj \
@@ -154,6 +155,7 @@ LIBRARY_OBJS= \
 	$(INTDIR)\structmember.obj \
 	$(INTDIR)\symtable.obj \
 	$(INTDIR)\sysmodule.obj \
+	$(INTDIR)\pystrtod.obj \
 	$(INTDIR)\thread.obj \
 	$(INTDIR)\traceback.obj \
 	$(INTDIR)\zipimport.obj \
@@ -170,19 +172,36 @@ LIBRARY_OBJS= \
 	$(INTDIR)\itertoolsmodule.obj \
 	$(INTDIR)\_localemodule.obj \
 	$(INTDIR)\_randommodule.obj \
-	$(INTDIR)\wince-compatibility.obj \
+	$(INTDIR)\_bisectmodule.obj \
+	$(INTDIR)\_heapqmodule.obj \
+	$(INTDIR)\collectionsmodule.obj \
+	$(INTDIR)\_csv.obj \
+	$(INTDIR)\datetimemodule.obj \
+	$(INTDIR)\parsermodule.obj \
+	$(INTDIR)\symtablemodule.obj \
+	$(INTDIR)\mmapmodule.obj \
+	$(INTDIR)\_winreg.obj \
+	$(INTDIR)\_codecs_cn.obj \
+	$(INTDIR)\_codecs_hk.obj \
+	$(INTDIR)\_codecs_iso2022.obj \
+	$(INTDIR)\_codecs_jp.obj \
+	$(INTDIR)\_codecs_kr.obj \
+	$(INTDIR)\_codecs_tw.obj \
+	$(INTDIR)\multibytecodec.obj \
+	$(INTDIR)\wince-compatibility.obj
+#	$(INTDIR)\_subprocess.obj
 
 #
 #	The static library
 #
-PYTHON_STATIC_LIBRARY=$(OUTDIR)\$(RESULT)_library.lib
+PYTHON_STATIC_LIBRARY=$(INTDIR)\$(RESULT)_library.lib
 $(PYTHON_STATIC_LIBRARY): $(LIBRARY_OBJS)
 	lib /OUT:$(PYTHON_STATIC_LIBRARY) $(INTDIR)\*.obj
 
 #
 #	Link step
 #
-$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll : $(OUTDIR) $(DEF_FILE) $(INTDIR)\python_nt.res $(PYTHON_STATIC_LIBRARY)
+$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll : $(OUTDIR) $(INTDIR) $(DEF_FILE) $(INTDIR)\python_nt.res $(PYTHON_STATIC_LIBRARY)
     $(LINK32) @<<
   $(LFLAGS) /out:$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).dll /implib:$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).lib /pdb:$(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).pdb $(INTDIR)\pythonrun.obj $(INTDIR)\python_nt.res $(PYTHON_STATIC_LIBRARY)
 <<
@@ -262,14 +281,6 @@ SOURCE=..\..\Modules\operator.c
 $(INTDIR)\operator.obj : $(SOURCE) $(INTDIR)
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
-SOURCE=..\..\Modules\pcremodule.c
-$(INTDIR)\pcremodule.obj : $(SOURCE) $(INTDIR)
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-SOURCE=..\..\Modules\pypcre.c
-$(INTDIR)\pypcre.obj : $(SOURCE) $(INTDIR)
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
 SOURCE=..\..\Modules\regexmodule.c
 $(INTDIR)\regexmodule.obj : $(SOURCE) $(INTDIR)
 	$(CPP) $(CPP_PROJ) $(SOURCE)
@@ -280,10 +291,6 @@ $(INTDIR)\regexpr.obj : $(SOURCE) $(INTDIR)
 
 SOURCE=..\..\Modules\rgbimgmodule.c
 $(INTDIR)\rgbimgmodule.obj : $(SOURCE) $(INTDIR)
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-SOURCE=..\..\Modules\rotormodule.c
-$(INTDIR)\rotormodule.obj : $(SOURCE) $(INTDIR)
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 SOURCE=..\..\Modules\shamodule.c
@@ -308,10 +315,6 @@ $(INTDIR)\timemodule.obj : $(SOURCE) $(INTDIR)
 
 SOURCE="..\..\PC\WinCE\strftime.c"
 $(INTDIR)\strftime.obj : $(SOURCE) $(INTDIR)
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-SOURCE=..\..\Modules\xreadlinesmodule.c
-$(INTDIR)\xreadlinesmodule.obj : $(SOURCE) $(INTDIR)
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 SOURCE=..\..\Modules\xxsubtype.c
@@ -446,6 +449,14 @@ SOURCE=..\..\Objects\weakrefobject.c
 $(INTDIR)\weakrefobject.obj : $(SOURCE) $(INTDIR)
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
+SOURCE=..\..\Objects\genobject.c
+$(INTDIR)\genobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Objects\setobject.c
+$(INTDIR)\setobject.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
 SOURCE=..\..\Parser\acceler.c
 $(INTDIR)\acceler.obj : $(SOURCE) $(INTDIR)
 	$(CPP) $(CPP_PROJ) $(SOURCE)
@@ -505,6 +516,10 @@ $(INTDIR)\getpathp.obj : $(SOURCE) $(INTDIR)
 SOURCE=..\..\PC\import_nt.c
 $(INTDIR)\import_nt.obj : $(SOURCE) $(INTDIR)
 	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+#SOURCE=..\..\PC\_subprocess.c
+#$(INTDIR)\_subprocess.obj : $(SOURCE) $(INTDIR)
+#	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 SOURCE=..\..\Python\bltinmodule.c
 $(INTDIR)\bltinmodule.obj : $(SOURCE) $(INTDIR)
@@ -664,10 +679,14 @@ $(INTDIR)\trees.obj : $(SOURCE) $(INTDIR)
 
 SOURCE=..\..\PC\WinCE\zlib\zutil.c
 $(INTDIR)\zutil.obj : $(SOURCE) $(INTDIR)
-	$(CPP) $(CPP_PROJ) /U _WIN32_WCE $(SOURCE)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 SOURCE=..\..\Python\thread.c
 $(INTDIR)\thread.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Python\pystrtod.c
+$(INTDIR)\pystrtod.obj : $(SOURCE) $(INTDIR)
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 SOURCE=..\..\Python\traceback.c
@@ -686,23 +705,88 @@ SOURCE=..\..\Modules\_randommodule.c
 $(INTDIR)\_randommodule.obj : $(SOURCE) $(INTDIR)
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
+SOURCE=..\..\Modules\_bisectmodule.c
+$(INTDIR)\_bisectmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\_heapqmodule.c
+$(INTDIR)\_heapqmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\collectionsmodule.c
+$(INTDIR)\collectionsmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\_csv.c
+$(INTDIR)\_csv.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\datetimemodule.c
+$(INTDIR)\datetimemodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\parsermodule.c
+$(INTDIR)\parsermodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\symtablemodule.c
+$(INTDIR)\symtablemodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\mmapmodule.c
+$(INTDIR)\mmapmodule.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\PC\_winreg.c
+$(INTDIR)\_winreg.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\cjkcodecs\_codecs_cn.c
+$(INTDIR)\_codecs_cn.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\cjkcodecs\_codecs_hk.c
+$(INTDIR)\_codecs_hk.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\cjkcodecs\_codecs_iso2022.c
+$(INTDIR)\_codecs_iso2022.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\cjkcodecs\_codecs_jp.c
+$(INTDIR)\_codecs_jp.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\cjkcodecs\_codecs_kr.c
+$(INTDIR)\_codecs_kr.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\cjkcodecs\_codecs_tw.c
+$(INTDIR)\_codecs_tw.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=..\..\Modules\cjkcodecs\multibytecodec.c
+$(INTDIR)\multibytecodec.obj : $(SOURCE) $(INTDIR)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
 SOURCE=..\..\PC\WinCE\wince-compatibility.c
 $(INTDIR)\wince-compatibility.obj : $(SOURCE) $(INTDIR)
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 SOURCE=..\..\PC\WinCe\python_nt.rc
-$(INTDIR)\python_nt.res : $(SOURCE) $(INTDIR)  binaries\lib\minimal-python23.zip
+$(INTDIR)\python_nt.res : $(SOURCE) $(INTDIR)  binaries\lib\minimal-python24.zip
 	$(RSC) $(RSCFLAGS) /r $(SOURCE)
 
 #
-#	If we don't have the minimal-python23.zip file built, get it built now
+#	If we don't have the minimal-python24.zip file built, get it built now
 #
-binaries\lib\minimal-python23.zip:
-	($NMAKE) -f makefile.lib
+binaries\lib\minimal-python24.zip:
+	$(NMAKE) -f makefile.lib
 
 #
 #	Cleanup
 #
 CLEAN:
 	@if exist $(INTDIR) rmdir/s/q $(INTDIR)
+	@del $(OUTDIR)\$(RESULT)$(PLATFORM_DLL_SUFFIX).*
 
