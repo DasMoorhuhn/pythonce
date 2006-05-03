@@ -798,6 +798,45 @@ static PyObject *OS_access(PyObject *Self, PyObject *Args)
     return PyBool_FromLong(1);  /* else it is readable and writable */
 }
 
+PyDoc_STRVAR(win32_startfile__doc__,
+"startfile(filepath) - Start a file with its associated application.\n\
+\n\
+This acts like double-clicking the file in Explorer, or giving the file\n\
+name as an argument to the DOS \"start\" command:  the file is opened\n\
+with whatever application (if any) its extension is associated.\n\
+\n\
+startfile returns as soon as the associated application is launched.\n\
+There is no option to wait for the application to close, and no way\n\
+to retrieve the application's exit status.");
+
+static PyObject *
+win32_startfile(PyObject *self, PyObject *args)
+{
+    PyObject *Path;
+    WCHAR wszPath[MAX_PATH + 1];
+	BOOL rc;
+    SHELLEXECUTEINFO sei;
+	if (!PyArg_ParseTuple(args, "O", &Path))
+        return NULL;
+	if (!_WinCE_Absolute_Path(Path, wszPath, MAX_PATH + 1))
+        return NULL;
+    memset(&sei, 0, sizeof(sei));
+    sei.cbSize = sizeof(sei);
+    sei.fMask = SEE_MASK_FLAG_NO_UI;
+    sei.lpFile = wszPath;
+    sei.nShow = SW_SHOWNORMAL;
+	Py_BEGIN_ALLOW_THREADS
+	rc = ShellExecuteEx(&sei);
+	Py_END_ALLOW_THREADS
+	if (!rc) {
+		errno = GetLastError();
+		PyErr_SetFromErrnoWithFilenameObject(PyExc_OSError, Path);
+		return NULL;
+	}
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 /*
  *	Exported Python methods
  */
@@ -822,6 +861,7 @@ static PyMethodDef OS_Methods[]=
 	{"chmod",   OS_chmod,	METH_VARARGS},
 	{"chdir",   OS_chdir,	METH_VARARGS},
 	{"access",  OS_access,	METH_VARARGS},
+	{"startfile",	win32_startfile, METH_VARARGS, win32_startfile__doc__},
 	{NULL, NULL}};
 
 /*

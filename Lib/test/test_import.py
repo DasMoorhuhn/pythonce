@@ -108,7 +108,7 @@ def test_module_with_large_stack(module):
     os.unlink(filename)
 
     # need to be able to load from current dir
-    sys.path.append(os.curdir)
+    sys.path.append('')
 
     # this used to crash
     exec 'import ' + module

@@ -90,6 +90,9 @@ static void (*PyEval_RestoreThreadP)(PyThreadState *);
 static PyObject *(*PySys_GetObjectP)(char *);
 #define	_WinCE_Declare_Interrupt	(*_WinCE_Declare_InterruptP)
 static void (*_WinCE_Declare_InterruptP)(void);
+#define	_wchdir	(*_wchdirP)
+static int (*_wchdirP)(const WCHAR *path);
+
 #define	_SYMBOL(Name) {TEXT(#Name), (void **)&Name##P}
 static struct {TCHAR *Name; void **SymbolP;} Python_DLL_Symbols[] = {
 	_SYMBOL(PyErr_Fetch), _SYMBOL(Py_fopen), _SYMBOL(Py_fclose), _SYMBOL(PyRun_SimpleFile), _SYMBOL(PyErr_SetString), _SYMBOL(PyExc_ValueError),
@@ -102,7 +105,9 @@ static struct {TCHAR *Name; void **SymbolP;} Python_DLL_Symbols[] = {
 	_SYMBOL(PyModule_GetDict), _SYMBOL(PyDict_SetItemString),
 	_SYMBOL(PyEval_GetBuiltins), _SYMBOL(Py_InitModule4), _SYMBOL(PyArg_ParseTuple),
 	_SYMBOL(PyEval_SaveThread), _SYMBOL(PyEval_RestoreThread), _SYMBOL(PySys_GetObject),
-	_SYMBOL(_WinCE_Declare_Interrupt)};
+	_SYMBOL(_WinCE_Declare_Interrupt),
+	_SYMBOL(_wchdir),
+};
 #undef	_SYMBOL
 
 /*
@@ -864,6 +869,18 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPTSTR lpCmdLine, int nCmdS
 			Error = 1;
 		} else {
 			/*
+             * Set the emulated current directory to the directory containing
+             * the program file.
+             */
+            WCHAR wszDir[MAX_PATH + 1];
+            if(MultiByteToWideChar(CP_ACP, 0, Python_Program_Name, -1, wszDir, MAX_PATH)) {
+                WCHAR *pSlash = wcsrchr(wszDir, L'\\');
+                if(pSlash) {
+                    *pSlash = 0;
+                    _wchdir(wszDir);
+                }
+            }
+			/*
 			 *	Run it
 			 */
 			Error = PyRun_SimpleFile(fp, Python_Program_Name);
@@ -1052,7 +1069,7 @@ static LRESULT CALLBACK PCCESHELL_Aboutbox_Dialog_Window_Procedure(HWND hWnd, UI
  */
 static LRESULT CALLBACK PCCESHELL_Main_Window_Procedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	static SHACTIVATEINFO Activate_Info = {0};
+	static SHACTIVATEINFO Activate_Info = { sizeof(SHACTIVATEINFO) };
 	switch(uMsg) {
 	  /*
 	   *	Destroy: Kill the application
@@ -1127,38 +1144,13 @@ static LRESULT CALLBACK PCCESHELL_Main_Window_Procedure(HWND hWnd, UINT uMsg, WP
 	   *	Change settings
 	   */
 	  case WM_SETTINGCHANGE:
-		  if (wParam == SPI_SETSIPINFO) {
-			  SIPINFO SIP_Info;
-
-			  /*
-			   *	Handle the setting change like we are supposed to
-			   */
-			  SHHandleWMSettingChange(hWnd, wParam, lParam, &Activate_Info);
-			  /*
-			   *	Now look at the desktop real-estate and re-size accordingly
-			   */
-			  ZeroMemory(&SIP_Info, sizeof(SIP_Info));
-			  SIP_Info.cbSize = sizeof(SIP_Info);
-			  if (SipGetInfo(&SIP_Info)) {
-				  SetWindowPos(hWnd, 0,
-					       SIP_Info.rcVisibleDesktop.left,
-					       SIP_Info.rcVisibleDesktop.top,
-					       SIP_Info.rcVisibleDesktop.right - SIP_Info.rcVisibleDesktop.left,
-					       SIP_Info.rcVisibleDesktop.bottom - SIP_Info.rcVisibleDesktop.top -
-							((SIP_Info.fdwFlags & SIPF_ON) ? 0: 26),
-					       0);
-			  }
-			  return(FALSE);
-		  }
+		  SHHandleWMSettingChange(hWnd, wParam, lParam, &Activate_Info);
 		  break;
 	  /*
 	   *	Activate window
 	   */
 	  case WM_ACTIVATE:
-		  if (wParam == SPI_SETSIPINFO) {
-			  SHHandleWMActivate(hWnd, wParam, lParam, &Activate_Info, 0);
-			  return(FALSE);
-		  }
+		  SHHandleWMActivate(hWnd, wParam, lParam, &Activate_Info, 0);
 		  break;
 	}
 	return(DefWindowProc(hWnd, uMsg, wParam, lParam));

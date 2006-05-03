@@ -1295,6 +1295,13 @@ __declspec(dllexport) size_t strxfrm(char *dest, char *src, size_t n)
 	return(n);
 }
 
+#if 0
+/*
+ *	Pretending that we support locales is futile because the C library doesn't.
+ *	For example if we call strtod("2,2") in the Italian locale then it will fail,
+ *	though it should succeed (and it does work on the PC).
+ */
+
 /*
  *	Get Locale information
  */
@@ -1463,24 +1470,62 @@ static void Get_Locale_Information(void)
 		Locale_Conversion.negative_sign = Negative_Sign ? "-" : None;
 	}
 }
+#endif	// 0
+
+#include <locale.h>
+
+static char C_LOCALE[] = "C";
+static char C_DECIMAL_POINT[] = ".";
+static char EMPTY_STRING[] = "";
+
+static struct lconv C_LOCALE_INFO = {
+	C_DECIMAL_POINT,	/* decimal_point */
+	EMPTY_STRING,		/* thousands_sep */
+	EMPTY_STRING,		/* grouping */
+	EMPTY_STRING,		/* int_curr_symbol */
+	EMPTY_STRING,		/* currency_symbol */
+	EMPTY_STRING,		/* mon_decimal_point */
+	EMPTY_STRING,		/* mon_thousands_sep */
+	EMPTY_STRING,		/* mon_grouping */
+	EMPTY_STRING,		/* positive_sign */
+	EMPTY_STRING,		/* negative_sign */
+	CHAR_MAX,		/* int_frac_digits */
+	CHAR_MAX,		/* frac_digits */
+	CHAR_MAX,		/* p_cs_precedes */
+	CHAR_MAX,		/* p_sep_by_space */
+	CHAR_MAX,		/* n_cs_precedes */
+	CHAR_MAX,		/* n_sep_by_space */
+	CHAR_MAX,		/* p_sign_posn */
+	CHAR_MAX		/* n_sign_posn */
+};
 
 /*
  *	Missing localeconv() function
  */
 struct lconv *localeconv(void)
 {
-
+	/*
 	if (!Locale_Conversion.decimal_point) Get_Locale_Information();
 	return(&Locale_Conversion);
+	*/
+	return &C_LOCALE_INFO;
 }
 
 /*
  *	Missing setlocale() function
+ *	We only support the "C" locale.
  */
 char *setlocale(int category, const char *locale)
 {
-	if (!Locale_Conversion.decimal_point) Get_Locale_Information();
-	return(Locale_Language ? Locale_Language : "C");
+	if(locale == NULL) {
+		/* Get the current locale */
+		return C_LOCALE;
+	}
+	/* Set the locale */
+	if(strcmp(locale, "C") != 0) {
+		return NULL;	/* Locale not supported */
+	}
+	return C_LOCALE;
 }
 
 /*

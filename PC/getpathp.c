@@ -534,6 +534,8 @@ calculate_path(void)
 	if (machinepath)
 		bufsz += strlen(machinepath) + 1;
 	bufsz += strlen(zip_path) + 1;
+	/* lib-tk in zip */
+	bufsz += strlen(zip_path) + strlen("\\lib-tk") + 1;
 #endif
 	if (envpath != NULL)
 		bufsz += strlen(envpath) + 1;
@@ -567,6 +569,12 @@ calculate_path(void)
 #ifdef MS_WINDOWS
 	if (zip_path[0]) {
 		strcpy(buf, zip_path);
+		buf = strchr(buf, '\0');
+		*buf++ = DELIM;
+		/* lib-tk in zip */
+		strcpy(buf, zip_path);
+		buf = strchr(buf, '\0');
+		strcpy(buf, "\\lib-tk");
 		buf = strchr(buf, '\0');
 		*buf++ = DELIM;
 	}
