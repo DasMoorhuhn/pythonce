@@ -1,3 +1,8 @@
+# Why I did this fork?
+I wanna get some experince with updateing an old python interpreter. I used to have a windows mobile 6.5 mobile phone as my first mobile ever :D so it's very nostalgic to me. 
+Maybe I can achive some progress. 
+
+# Original Readme
 These are the sources required to build Python (currently version 2.4.3)
 for Windows CE.  Go to the PCbuild/WinCE directory and do an "nmake" to build
 Python 2.4.3 for Windows/CE.
